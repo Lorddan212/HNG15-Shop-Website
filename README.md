@@ -18,7 +18,7 @@ FolioVale currently uses professional pre-launch branding. Checkout is in testin
 
 ## Stack
 
-Next.js App Router, React, TypeScript, plain CSS, Supabase PostgreSQL/Auth, and Mailgun's HTTP API. No payment gateway is needed for this version.
+Next.js App Router, React, TypeScript, plain CSS, Supabase PostgreSQL/Auth, and Mailgun's HTTP API. Pay on delivery is the active payment method. Online payment is shown as a planned option but is not enabled, because payment gateway integration is optional for this task.
 
 ## Run locally
 
