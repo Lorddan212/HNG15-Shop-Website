@@ -1,9 +1,11 @@
 # FolioVale — Agent Guidelines
 
 ## Purpose
+
 Build and maintain the existing FolioVale notebook and planner shop. Keep work focused on a usable storefront, checkout, Supabase persistence, Google authentication, and Mailgun confirmation emails.
 
 ## Architecture
+
 - Next.js App Router, React, TypeScript, and plain CSS.
 - Read relevant installed Next.js documentation in `node_modules/next/dist/docs/` before changing framework-specific code.
 - `app/`: pages and HTTP route handlers.
@@ -15,11 +17,13 @@ Build and maintain the existing FolioVale notebook and planner shop. Keep work f
 - `.env.local`: private configuration, ignored by Git.
 
 ## Scope and design
+
 The FolioVale catalogue contains 53 sample products: 25 notebooks, 18 planners, and 10 sets. Checkout records pay-on-delivery orders. Do not add real payments, unrelated dashboards, or unrequested dependencies.
 Preserve the ink-blue, pale-blue, paper-white design, serif headings, original notebook illustrations, and responsive layouts. Keep customer-facing copy clear. Do not invent testimonials, sales counts, certifications, shipping guarantees, or real-world brand claims.
 Use FolioVale branding without internship or HNG references in customer-facing copy. The owner currently wants professional pre-launch branding. Keep concise testing information at checkout, in order details, and in receipts until actual stock and delivery operations are confirmed. No real inventory fulfillment has been arranged.
 
 ## Data and security
+
 - Use Supabase for products, bags, profiles, orders, order items, and email status.
 - Never replace database persistence with localStorage or fake successful orders.
 - Keep Supabase secret keys and Mailgun API keys server-only. Never print, commit, or prefix them with NEXT_PUBLIC.
@@ -35,6 +39,7 @@ Use FolioVale branding without internship or HNG references in customer-facing c
 - Do not read customer data unnecessarily or use personal customer records for tests.
 
 ## Workflow
+
 Inspect current files and Git status before edits. Preserve unrelated user work.
 Keep changes small and coherent. Update the README when behavior or setup changes.
 Do not deploy, commit, push, or create extra external resources unless the user authorizes it.
@@ -42,6 +47,7 @@ Use the FolioVale Supabase project only; do not modify unrelated projects.
 Provider setup proceeds one checkpoint at a time. Users enter secrets locally, outside chat.
 
 ## Verification
+
 - Run `npm run typecheck`, `npm test`, and `npm run build` for relevant functional changes.
 - Tests must cover every application endpoint: valid requests, invalid inputs, authentication, and ownership.
 - Test checkout idempotency, server totals, stock, bag clearing, and email claims against an isolated database transaction with rollback.

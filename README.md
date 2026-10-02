@@ -41,7 +41,7 @@ Copy `.env.example` to `.env.local` for a new checkout. The current working copy
 | MAILGUN_API_KEY | Server-only Mailgun sending key |
 | MAILGUN_DOMAIN | Verified sending domain or Mailgun sandbox domain |
 | MAILGUN_FROM | Sender, e.g. FolioVale <orders@your-sending-domain> |
-| MAILGUN_API_BASE_URL | https://api.mailgun.net or https://api.eu.mailgun.net |
+| MAILGUN_API_BASE_URL | <https://api.mailgun.net> or <https://api.eu.mailgun.net> |
 
 Restart the development server after changing environment variables if changes are not picked up automatically. A catalogue preview is shown while the database connection is incomplete; ordering stays disabled and no success is simulated.
 
@@ -101,6 +101,7 @@ npm run build
 The test runner uses TypeScript compilation and Node's built-in test runner. It covers API validation, authentication/ownership, same-origin requests, totals, failure handling, and the Mailgun request shape. Database tests are run separately in a transaction that rolls back test records.
 
 Verified locally on 1 October 2026:
+
 - Production build completed, including TypeScript checks; all 22 automated tests passed.
 - Browser review covered the desktop storefront, mobile catalogue, category filters, pagination, and empty search results. The mobile hero typography was refined after review.
 - Live HTTP checks on both localhost and 127.0.0.1 verified the 53-product catalogue, adding two bag items, persistence across requests, removal, and rejection of foreign-origin requests.
@@ -108,7 +109,9 @@ Verified locally on 1 October 2026:
 
 The request-origin guard compares the browser origin with the incoming Host and request protocol, because Next.js can normalize its internal request URL to localhost. Foreign origins remain blocked.
 
-Google sign-in is connected: the Google provider is enabled, the local Site URL is http://localhost:3002, and callback URLs for localhost:3002 and 127.0.0.1:3002 are saved. On 2 October 2026 the owner confirmed successful Google sign-in and the My orders link. Mailgun sandbox domain, sender and US endpoint are saved locally; the sending key, verified recipient and checkout-to-inbox test are still pending. Do not report email integration complete until those checks pass.
+Google sign-in is connected: the Google provider is enabled, the local Site URL is <http://localhost:3002>, and callback URLs for localhost:3002 and 127.0.0.1:3002 are saved. On 2 October 2026 the owner confirmed successful Google sign-in and the My orders link.
+
+Mailgun is connected using the US API endpoint and a verified sandbox recipient. On 2 October 2026, an end-to-end checkout test successfully created an order, Mailgun accepted and delivered the confirmation message, and the confirmation email was received in Gmail. Because the project currently uses a Mailgun sandbox domain, confirmation emails can only be delivered to authorized sandbox recipients until a custom sending domain is configured.
 
 ## Deploy
 
