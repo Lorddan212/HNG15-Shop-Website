@@ -198,16 +198,19 @@ Before submission:
 - Order history must survive logout and re-login.
 - Production deployment must be tested end-to-end.
 
-Commands:
-
 ```sh
 npm run typecheck
 npm test
 npm run build
+```
+
+---
 
 ## 12. Deployment
 
-  The application will be deployed to Vercel.
+  The application is deployed to Vercel at:
+
+<https://lorddan212-hng15-shop-website.vercel.app>
 
   Production deployment must include:
 
@@ -217,9 +220,12 @@ npm run build
 - Production Supabase redirect URLs.
 - Successful end-to-end testing on the deployed website.
 
+---
+
 ## 13. Out of Scope
 
 The following are not required for the current version:
+
 - Real inventory fulfilment.
 - Real shipping operations.
 - Admin dashboard.
@@ -227,8 +233,12 @@ The following are not required for the current version:
 - Live card or bank payments.
 - Team Zedu functionality.
 
-##14. Success Criteria
+---
+
+## 14. Success Criteria
+
 FolioVale is considered complete when a user can:
+
 1. Visit the deployed shop.
 2. Browse the collection.
 3. Add one or more products to the bag.
@@ -239,3 +249,5 @@ FolioVale is considered complete when a user can:
 8. Receive a Mailgun confirmation email.
 9. View the saved order in order history.
 10. Sign out and later sign back in and still see the previous order.
+
+---

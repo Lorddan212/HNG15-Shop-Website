@@ -66,7 +66,19 @@ All tables have RLS enabled. Bag tables intentionally have no browser policies a
 6. In [Supabase Auth providers](https://supabase.com/dashboard/project/qolxxboicrhhrunfljbj/auth/providers), enable Google and enter the Google client ID and client secret there. The Google secret belongs in Supabase, not in public app code.
 7. In Supabase Authentication → URL Configuration, set the local Site URL to `http://localhost:3002` and add `http://localhost:3002/auth/callback` to allowed redirect URLs. If using `127.0.0.1`, add that exact callback origin too.
 8. After deployment, update Site URL to the production URL and add the production `/auth/callback` URL.
-9. Test the shop's **Continue with Google** button. Confirm the signed-in account appears and can view its orders.
+9. For this project in Supabase Authentication → URL Configuration, set the Site URL to:
+   `https://lorddan212-hng15-shop-website.vercel.app`
+
+   Keep the local development callback URLs in the allowed Redirect URLs:
+   - `http://localhost:3002/auth/callback`
+   - `http://127.0.0.1:3002/auth/callback`
+   - `https://lorddan212-hng15-shop-website.vercel.app/auth/callback`
+
+10. In Google Cloud, keep the Supabase OAuth callback as the authorized redirect URI:
+   `https://qolxxboicrhhrunfljbj.supabase.co/auth/v1/callback`
+
+   Add the production FolioVale URL as an authorized JavaScript origin where applicable.
+11. Test the shop's **Continue with Google** button. Confirm the signed-in account appears and can view its orders.
 
 Reference: [Supabase Google authentication guide](https://supabase.com/docs/guides/auth/social-login/auth-google).
 
@@ -113,11 +125,21 @@ Google sign-in is connected: the Google provider is enabled, the local Site URL 
 
 Mailgun is connected using the US API endpoint and a verified sandbox recipient. On 2 October 2026, an end-to-end checkout test successfully created an order, Mailgun accepted and delivered the confirmation message, and the confirmation email was received in Gmail. Because the project currently uses a Mailgun sandbox domain, confirmation emails can only be delivered to authorized sandbox recipients until a custom sending domain is configured.
 
+Production verification on 2 October 2026:
+
+- FolioVale was successfully deployed to Vercel.
+- Google OAuth was verified on the production domain.
+- Multiple products could be added, updated, removed, and carried through checkout.
+- Checkout successfully persisted orders in Supabase.
+- Order history remained available after sign-out and later sign-in.
+- Mailgun confirmation email delivery was verified using an authorized sandbox recipient.
+
 ## Deploy
 
 The project owner handles deployment. For Vercel, import the private GitHub repository using the Next.js preset, configure all environment variables, and deploy. Never upload `.env.local`. Configure the final Google/Supabase redirect URLs before testing authentication on the live site.
 
-No deployment or GitHub push has been performed for this shop during development.
+The project is deployed from the `main` branch of the GitHub repository to Vercel at:
+<https://lorddan212-hng15-shop-website.vercel.app>
 
 ## Files
 
