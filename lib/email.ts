@@ -17,7 +17,7 @@ export function confirmationText(order: Order) {
     "Your order " + order.reference + " has been recorded.",
     "",
     ...order.items.map(
-      (item) =>
+      (item: Order["items"][number]) =>
         item.quantity +
         " × " +
         item.product_name +
@@ -311,11 +311,16 @@ export async function sendOrderEmail(
     throw new Error("Mailgun did not accept the message");
   }
 
-  const result = await response.json();
+  const result: unknown = await response.json();
 
-  if (typeof result.id !== "string") {
+  if (
+    typeof result !== "object" ||
+    result === null ||
+    !("id" in result) ||
+    typeof result.id !== "string"
+  ) {
     throw new Error("Invalid Mailgun response");
   }
 
-  return result.id as string;
+  return result.id;
 }
