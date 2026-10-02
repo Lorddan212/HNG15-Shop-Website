@@ -1,0 +1,27 @@
+{
+  "name": "foliovale-shop",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3002",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc -p tsconfig.tests.json && node --test output/tests/tests/*.test.js"
+  },
+  "dependencies": {
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.117.2",
+    "lucide-react": "1.49.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "@types/node": "26.6.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}
