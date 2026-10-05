@@ -1,5 +1,6 @@
 'use client';
 import {createContext,useContext,useEffect,useState,useCallback,type ReactNode} from 'react';
+import {safeNext} from '@/lib/commerce';
 import {browserClient} from '@/lib/supabase/browser';
 import {previewProducts} from '@/lib/catalog';
 import {EMPTY_CART,type Cart,type Product,type Customer} from '@/lib/types';
@@ -25,8 +26,11 @@ export function ShopProvider({children}:{children:ReactNode}){
  try{const data=await request<{cart:Cart}>('/api/cart',{product_id:id,quantity,operation});setCart(data.cart);if(operation==='add'){setBagOpen(true);setNotice('Added to your bag.');}}
  catch(e){setNotice(e instanceof Error?e.message:'Your bag could not be updated.');}finally{setBusy(false);}
  }
- async function signIn(next='/checkout'){setNotice('');try{const{error}=await browserClient().auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/auth/callback?next='+encodeURIComponent(next),scopes:'email profile'}});if(error)throw error;}catch{setNotice('Google sign-in is not ready yet. Please try again later.');}}
- async function signOut(){const{error}=await browserClient().auth.signOut();if(error){setNotice('Sign-out did not finish. Try again.');return;}setUser(null);window.location.assign('/');}
+ async function signIn(next='/'){setNotice('');try{
+ // This short-lived cookie holds only an allowlisted page path, never credentials.
+ document.cookie='fv_auth_next='+safeNext(next)+'; Path=/auth/callback; Max-Age=600; SameSite=Lax'+(window.location.protocol==='https:'?'; Secure':'');
+ const{error}=await browserClient().auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/auth/callback',scopes:'email profile'}});if(error)throw error;}catch{setNotice('Google sign-in is not ready yet. Please try again later.');}}
+ async function signOut(){try{const{error}=await browserClient().auth.signOut();if(error)throw error;setUser(null);window.location.assign('/');}catch{setNotice('Sign-out did not finish. Try again.');}}
  return <Context.Provider value={{products,cart,user,loading,connected,busy,notice,bagOpen,setBagOpen,setNotice,change,refresh,signIn,signOut}}>{children}</Context.Provider>;
 }
 export function useShop(){const value=useContext(Context);if(!value)throw new Error('ShopProvider is required');return value;}

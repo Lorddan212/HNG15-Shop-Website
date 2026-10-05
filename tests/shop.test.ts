@@ -1,3 +1,4 @@
+import {resolveCustomer} from '../lib/request-auth';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +12,7 @@ const uid='30000000-0000-4000-8000-000000000001';
 const user={id:uid,email:'customer@example.com',name:'Test Customer'};
 const order:Order={id,reference:'FV-TEST',user_id:uid,email:user.email,created_at:'2026-10-01T10:00:00Z',full_name:'Test Customer',phone:'08012345678',address:'10 Example Street',city:'Lagos',state:'Lagos',notes:'',subtotal_kobo:850000,shipping_kobo:150000,total_kobo:1000000,payment_method:'pay_on_delivery',status:'placed',email_status:'queued',items:[{product_id:previewProducts[0].id,product_name:'The Daybook',quantity:1,unit_price_kobo:850000}]};
 const valid={request_id:id,full_name:'Test Customer',phone:'08012345678',address:'10 Example Street',city:'Lagos',state:'Lagos',notes:''};
-const services=():Services=>({ready(){},user:async()=>user,token:async()=>'cart-hash',products:async()=>previewProducts,cart:async()=>EMPTY_CART,changeCart:async()=>EMPTY_CART,checkout:async()=>structuredClone(order),orders:async()=>[structuredClone(order)],order:async(_id,owner)=>owner===uid?structuredClone(order):null,confirmEmail:async()=> 'accepted'});
+const services=():Services=>({ready(){},user:async()=>user,token:async()=>'cart-hash',products:async()=>previewProducts,cart:async()=>EMPTY_CART,changeCart:async()=>EMPTY_CART,checkout:async()=>structuredClone(order),orders:async()=>[structuredClone(order)],order:async(_id,owner)=>owner===uid?structuredClone(order):null,deleteOrder:async(actualId,owner)=>actualId===id&&owner===uid,confirmEmail:async()=> 'accepted'});
 const post=(body:unknown,origin='http://localhost:3000')=>new Request('http://localhost:3000/api/test',{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify(body)});
 test('catalogue, session and cart endpoints return data without shared caching',async()=>{
  const api=handlers(services());for(const response of [await api.products(),await api.session(),await api.cart()]){assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'private, no-store');}
@@ -77,4 +78,61 @@ test('same-origin cart writes use the incoming host when Next normalizes its int
  assert.equal((await api.changeCart(req('http://attacker.example','127.0.0.1:3002','attacker.example'))).status,403);
  assert.equal((await api.changeCart(req('http://localhost:3002','127.0.0.1:3002'))).status,403);
  assert.equal((await api.changeCart(req('null','127.0.0.1:3002'))).status,403);
+});
+const deletion=(origin:string|null='http://localhost:3000')=>new Request('http://localhost:3000/api/orders/'+id,{method:'DELETE',headers:origin?{origin}:{}});
+test('order deletion uses verified ownership and returns no-store success',async()=>{
+ const s=services();s.deleteOrder=async(actualId,owner)=>{assert.equal(actualId,id);assert.equal(owner,uid);return true;};
+ const response=await handlers(s).deleteOrder(deletion(),id);
+ assert.equal(response.status,200);assert.deepEqual(await response.json(),{deleted:true});assert.equal(response.headers.get('cache-control'),'private, no-store');
+});
+test('order deletion rejects signed-out users, invalid IDs and missing or foreign origins before writing',async()=>{
+ const s=services();s.deleteOrder=async()=>{assert.fail('Unexpected database write');};const api=handlers(s);
+ for(const origin of [null,'https://attacker.example'])assert.equal((await api.deleteOrder(deletion(origin),id)).status,403);
+ assert.equal((await api.deleteOrder(deletion(),'invalid')).status,404);
+ s.user=async()=>null;assert.equal((await api.deleteOrder(deletion(),id)).status,401);
+});
+test('order deletion conceals missing and other-owner orders and handles repeated requests',async()=>{
+ const s=services();const api=handlers(s);
+ s.user=async()=>({...user,id:'other'});assert.equal((await api.deleteOrder(deletion(),id)).status,404);
+ s.user=async()=>user;let removed=false;s.deleteOrder=async()=>{if(removed)return false;removed=true;return true;};
+ assert.equal((await api.deleteOrder(deletion(),id)).status,200);assert.equal((await api.deleteOrder(deletion(),id)).status,404);
+});
+test('order deletion reports database failure instead of success',async()=>{
+ const s=services();s.deleteOrder=async()=>{throw new ShopError('Try again',503);};assert.equal((await handlers(s).deleteOrder(deletion(),id)).status,503);
+});
+
+const mobile=(path:string,method='GET',data?:unknown,authorization='Bearer valid')=>new Request('https://shop.example/api/'+path,{method,headers:{authorization,...(data===undefined?{}:{'content-type':'application/json'})},...(data===undefined?{}:{body:JSON.stringify(data)})});
+function mobileServices():Services{
+ const s=services();s.user=request=>resolveCustomer(request?.headers.get('authorization')??null,async()=>user,async token=>token==='valid'?user:null);return s;
+}
+test('mobile and web session representations match',async()=>{
+ const api=handlers(mobileServices());assert.deepEqual(await(await api.session()).json(),await(await api.session(mobile('session'))).json());
+});
+test('valid bearer cart writes and checkout work without browser Origin and use the verified owner',async()=>{
+ const s=mobileServices();s.token=async(actualUser,req)=>{assert.equal(actualUser?.id,uid);assert.equal(req?.headers.get('origin'),null);return 'shared-account-cart';};
+ s.changeCart=async token=>{assert.equal(token,'shared-account-cart');return EMPTY_CART;};s.checkout=async(token,actualUser)=>{assert.equal(token,'shared-account-cart');assert.equal(actualUser.id,uid);return structuredClone(order);};
+ const api=handlers(s);assert.equal((await api.cart(mobile('cart'))).status,200);
+ assert.equal((await api.changeCart(mobile('cart','POST',{product_id:previewProducts[0].id,quantity:2}))).status,200);
+ assert.equal((await api.checkout(mobile('checkout','POST',valid))).status,200);
+});
+test('every endpoint rejects invalid bearer credentials, including otherwise public reads',async()=>{
+ const s=mobileServices();s.token=async()=>assert.fail('Invalid credentials reached cart resolver');
+ const api=handlers(s);const invalid=(path:string,method='GET',body?:unknown)=>mobile(path,method,body,'Bearer random');
+ for(const response of [await api.products(invalid('products')),await api.session(invalid('session')),await api.cart(invalid('cart')),await api.orders(invalid('orders')),await api.order(id,invalid('orders/'+id)),await api.changeCart(invalid('cart','POST',{product_id:previewProducts[0].id,quantity:1})),await api.checkout(invalid('checkout','POST',valid)),await api.deleteOrder(invalid('orders/'+id,'DELETE'),id),await api.retryEmail(invalid('orders/'+id+'/email','POST',{}),id)])assert.equal(response.status,401);
+});
+test('bearer requests preserve order ownership for detail, deletion and email retries',async()=>{
+ const s=mobileServices();const api=handlers(s);
+ assert.equal((await api.orders(mobile('orders'))).status,200);assert.equal((await api.order(id,mobile('orders/'+id))).status,200);
+ assert.equal((await api.retryEmail(mobile('orders/'+id+'/email','POST',{}),id)).status,200);
+ assert.equal((await api.deleteOrder(mobile('orders/'+id,'DELETE'),id)).status,200);
+ s.user=async()=>({...user,id:'other'});
+ assert.equal((await api.order(id,mobile('orders/'+id))).status,404);
+ assert.equal((await api.retryEmail(mobile('orders/'+id+'/email','POST',{}),id)).status,404);
+ assert.equal((await api.deleteOrder(mobile('orders/'+id,'DELETE'),id)).status,404);
+});
+test('anonymous cart and cookie auth still require browser same-origin mutation checks',async()=>{
+ const s=mobileServices();s.user=async()=>null;const api=handlers(s);
+ assert.equal((await api.cart(new Request('https://shop.example/api/cart'))).status,200);
+ assert.equal((await api.changeCart(post({product_id:previewProducts[0].id,quantity:1}))).status,200);
+ assert.equal((await api.changeCart(new Request('https://shop.example/api/cart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({product_id:previewProducts[0].id,quantity:1})}))).status,403);
 });

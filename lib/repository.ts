@@ -1,24 +1,40 @@
 import 'server-only';
-import { createHash, randomBytes } from 'node:crypto';
+import {resolveCustomer} from './request-auth';
+import {resolveCartToken} from './cart-identity';
 import { cookies } from 'next/headers';
-import { adminClient, authClient, databaseConfigured } from './supabase/server';
+import { adminClient, authClient, bearerClient, databaseConfigured } from './supabase/server';
 import { priceCart, ShopError } from './commerce';
 import { emailConfigured, sendOrderEmail } from './email';
 import type { CartItem, Customer, Delivery, Order, Product } from './types';
 export function requireDatabase() { if(!databaseConfigured()) throw new ShopError('The shop is still being connected. Please try again later.',503); }
-export async function customer():Promise<Customer|null> {
- if(!databaseConfigured()) return null;
- const {data:{user}}=await (await authClient()).auth.getUser();
- if(!user?.email) return null;
- return {id:user.id,email:user.email,name:user.user_metadata?.full_name || ''};
+const identities=new WeakMap<Request,Promise<Customer|null>>();
+async function identify(request?:Request):Promise<Customer|null>{
+ return resolveCustomer(request?.headers.get('authorization')??null,async()=>{
+  if(!databaseConfigured())return null;
+  const {data:{user}}=await(await authClient()).auth.getUser();
+  return user?.email?{id:user.id,email:user.email,name:user.user_metadata?.full_name||''}:null;
+ },async token=>{
+  const {data:{user},error}=await bearerClient().auth.getUser(token);
+  return !error&&user?.email?{id:user.id,email:user.email,name:user.user_metadata?.full_name||''}:null;
+ });
 }
-export async function cartToken() {
- const jar=await cookies();let token=jar.get('fv_bag')?.value;
- if(!token || !/^[a-f0-9]{64}$/.test(token)) {
- token=randomBytes(32).toString('hex');
- jar.set('fv_bag',token,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:60*60*24*30});
- }
- return createHash('sha256').update(token).digest('hex');
+export function customer(request?:Request):Promise<Customer|null>{
+ if(!request)return identify();
+ let identity=identities.get(request);
+ if(!identity){identity=identify(request);identities.set(request,identity);}
+ return identity;
+}
+export async function cartToken(user:Customer|null,request?:Request){
+ const bearer=request?.headers.has('authorization')??false;
+ return resolveCartToken(user,bearer,{
+  guestToken:async()=>(await cookies()).get('fv_bag')?.value,
+  setGuestToken:async token=>{(await cookies()).set('fv_bag',token,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:60*60*24*30});},
+  accountCart:async(userId,guestHash,newHash)=>{
+   const {data,error}=await adminClient().rpc('resolve_account_cart',{p_user_id:userId,p_guest_token_hash:guestHash,p_new_token_hash:newHash});
+   if(error||typeof data!=='string')throw new ShopError('Your account bag could not be loaded. Please try again.',503);
+   return data;
+  },
+ });
 }
 const orderSelect='*,items:order_items(product_id,product_name,quantity,unit_price_kobo)';
 export const repository={
@@ -40,15 +56,20 @@ export const repository={
  const {request_id,...delivery}=input;
  const {data,error}=await adminClient().rpc('checkout_cart',{p_token_hash:token,p_user_id:user.id,p_email:user.email,p_request_id:request_id,p_delivery:delivery});
  if(error) throw new ShopError(error.code==='P0001'?error.message:'Your order could not be saved. Please retry.',error.code==='P0001'?409:503);
- const order=await this.order(data,user.id);if(!order)throw new ShopError('Order saved. View your orders to check its status.',503);return order;
+ const order=await this.order(data,user.id);if(!order)throw new ShopError('This checkout was already recorded and removed from your history. Start a new checkout to place another order.',409);return order;
  },
  async orders(userId:string):Promise<Order[]> {
- const {data,error}=await adminClient().from('orders').select(orderSelect).eq('user_id',userId).order('created_at',{ascending:false}).limit(50);
+ const {data,error}=await adminClient().from('orders').select(orderSelect).eq('user_id',userId).is('deleted_at',null).order('created_at',{ascending:false}).limit(50);
  if(error)throw new ShopError('Your orders could not be loaded.',503);return data as Order[];
  },
  async order(id:string,userId:string):Promise<Order|null> {
- const {data,error}=await adminClient().from('orders').select(orderSelect).eq('id',id).eq('user_id',userId).maybeSingle();
+ const {data,error}=await adminClient().from('orders').select(orderSelect).eq('id',id).eq('user_id',userId).is('deleted_at',null).maybeSingle();
  if(error)throw new ShopError('This order could not be loaded.',503);return data as Order|null;
+ },
+ async deleteOrder(id:string,userId:string) {
+ const {data,error}=await adminClient().from('orders').update({deleted_at:new Date().toISOString()}).eq('id',id).eq('user_id',userId).is('deleted_at',null).select('id').maybeSingle();
+ if(error)throw new ShopError('This order could not be removed. Please try again.',503);
+ return data!==null;
  },
  async confirmEmail(order:Order) {
  if(!emailConfigured())return order.email_status;

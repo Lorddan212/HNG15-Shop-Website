@@ -251,3 +251,13 @@ FolioVale is considered complete when a user can:
 10. Sign out and later sign back in and still see the previous order.
 
 ---
+
+## 15. Task 3 Phase 1: shared account backend
+
+Preserve the existing web shop and API paths while preparing for a later Expo mobile app. The same verified Supabase account must resolve one account cart from both cookie-authenticated web and bearer-authenticated mobile requests. Guest cookies continue working; sign-in merges guest items with account items up to stock and the per-product limit of 10. Out-of-stock or inactive items are excluded during a merge.
+
+Cart tokens stay private. Owners may read only their own cart metadata/items, and only the server may mutate them. Invalid bearer credentials return 401; browser mutations retain origin checks. Checkout and order ownership semantics remain intact.
+
+The new migration prepares cart metadata for Realtime notifications and touches updated_at for item removal and checkout. Client subscriptions and mobile UI are out of scope for this phase. Changes remain local until the migration and a separate deployment are authorized.
+
+Website account improvements in this release: general sign-in returns home, the shared header exposes Sign out, and customers can confirm deletion from their own visible order history while the original transaction record remains intact.

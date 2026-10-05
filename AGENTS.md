@@ -27,10 +27,13 @@ Use FolioVale branding without internship or HNG references in customer-facing c
 - Use Supabase for products, bags, profiles, orders, order items, and email status.
 - Never replace database persistence with localStorage or fake successful orders.
 - Keep Supabase secret keys and Mailgun API keys server-only. Never print, commit, or prefix them with NEXT_PUBLIC.
-- Validate user identity through Supabase `getUser()` for protected actions.
+- Validate user identity through Supabase `getUser()` for protected actions. API routes support both cookie sessions and explicit Bearer tokens. A supplied Authorization header takes precedence; invalid tokens return 401 and must never fall back to cookies.
 - Guests own bags through a random HttpOnly cookie; store only its SHA-256 hash in the database.
 - Every order lookup must restrict results to the verified user ID.
-- Keep RLS enabled. Browser roles may read active products and their own orders/profile. Bag tables and all writes are server-only.
+- Keep RLS enabled. Browser roles may read active products and their own orders/profile. After the Task 3 migration, authenticated users may read only their own cart metadata/items; token_hash stays server-only. All writes remain server-only.
+- Resolve authenticated carts by verified user ID through the service-role-only resolve_account_cart function. Never promote a guest cookie hash to an account-cart token. Merge under database locks and preserve quantity/stock caps.
+- Only a successfully verified Bearer request may omit Origin on mutations. Cookie and guest requests retain the same-origin check. Never infer authorization from a header merely being present.
+- Task 3 is Phase 1 only: no mobile UI, no /api/mobile routes, and no realtime client subscription without a later request. Its migration is prepared but not applied; follow TASK3_PHASE1.md before release.
 - Calculate totals and stock adjustments in the checkout database transaction. Never accept client prices.
 - Preserve checkout idempotency and stock locking. A repeated request ID must return the same order.
 - Preserve order snapshots even if catalogue prices change.
