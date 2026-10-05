@@ -13,6 +13,7 @@ Build and maintain the existing FolioVale notebook and planner shop. Keep work f
 - `lib/`: validation, prices, server repository, auth, email, types, and testable handlers.
 - `supabase/migrations/`: versioned database schema and catalogue seed.
 - `tests/`: focused API and business-rule tests.
+- `mobile/`: Expo SDK 57 React Native client with TypeScript and Expo Router; read `mobile/AGENTS.md` before editing it. Keep it excluded from root TypeScript compilation.
 - `README.md`: setup, verification, and deployment status.
 - `.env.local`: private configuration, ignored by Git.
 
@@ -30,10 +31,10 @@ Use FolioVale branding without internship or HNG references in customer-facing c
 - Validate user identity through Supabase `getUser()` for protected actions. API routes support both cookie sessions and explicit Bearer tokens. A supplied Authorization header takes precedence; invalid tokens return 401 and must never fall back to cookies.
 - Guests own bags through a random HttpOnly cookie; store only its SHA-256 hash in the database.
 - Every order lookup must restrict results to the verified user ID.
-- Keep RLS enabled. Browser roles may read active products and their own orders/profile. After the Task 3 migration, authenticated users may read only their own cart metadata/items; token_hash stays server-only. All writes remain server-only.
+- Keep RLS enabled. Browser roles may read active products and their own orders/profile. The applied Task 3 migration allows authenticated users to read only their own cart metadata/items; token_hash stays server-only. All writes remain server-only.
 - Resolve authenticated carts by verified user ID through the service-role-only resolve_account_cart function. Never promote a guest cookie hash to an account-cart token. Merge under database locks and preserve quantity/stock caps.
 - Only a successfully verified Bearer request may omit Origin on mutations. Cookie and guest requests retain the same-origin check. Never infer authorization from a header merely being present.
-- Task 3 is Phase 1 only: no mobile UI, no /api/mobile routes, and no realtime client subscription without a later request. Its migration is prepared but not applied; follow TASK3_PHASE1.md before release.
+- Task 3 Phase 1 is complete: the shared-cart migration is applied and the production backend supports verified Bearer tokens. Phase 2B adds the mobile Shop, Cart, and Account foundation using the existing API routes. Google OAuth, mobile checkout, and realtime subscriptions require Phase 3 or later authorization. Do not add /api/mobile routes or fake mobile sessions.
 - Calculate totals and stock adjustments in the checkout database transaction. Never accept client prices.
 - Preserve checkout idempotency and stock locking. A repeated request ID must return the same order.
 - Preserve order snapshots even if catalogue prices change.
@@ -52,6 +53,7 @@ Provider setup proceeds one checkpoint at a time. Users enter secrets locally, o
 ## Verification
 
 - Run `npm run typecheck`, `npm test`, and `npm run build` for relevant functional changes.
+- For mobile changes, also run `npx expo-doctor`, `npx tsc --noEmit`, `npx expo lint`, and `npm test` from `mobile/`. Distinguish bundle checks from physical-device verification.
 - Tests must cover every application endpoint: valid requests, invalid inputs, authentication, and ownership.
 - Test checkout idempotency, server totals, stock, bag clearing, and email claims against an isolated database transaction with rollback.
 - Review desktop and mobile layouts, keyboard navigation, dialog dismissal, long text, and empty/error states.
