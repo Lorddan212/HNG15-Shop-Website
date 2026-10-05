@@ -13,3 +13,15 @@ test('missing, rejected or failed auth exchanges return a sign-in error',async()
  }
  const failed=await finishSignIn(new Request('https://shop.example/auth/callback?code=test'),async()=>{throw Error('network');});assert.match(failed.headers.get('location')!,/auth_error/);
 });
+test('ordinary sign-in returns home while explicit checkout and orders destinations are preserved',async()=>{
+ for(const [query,path] of [['','/'],['&next=%2F','/'],['&next=%2Fcheckout','/checkout'],['&next=%2Forders','/orders']]){
+  const response=await finishSignIn(new Request('https://shop.example/auth/callback?code=test'+query),async()=>true);
+  assert.equal(response.headers.get('location'),'https://shop.example'+path);
+ }
+});
+test('plain registered callback uses only a safe destination cookie',async()=>{
+ for(const [destination,path] of [['/','/'],['/checkout','/checkout'],['/orders','/orders'],['https://attacker.example','/'],['//attacker.example','/']]){
+  const response=await finishSignIn(new Request('https://shop.example/auth/callback?code=test'),async()=>true,destination);
+  assert.equal(response.headers.get('location'),'https://shop.example'+path);
+ }
+});

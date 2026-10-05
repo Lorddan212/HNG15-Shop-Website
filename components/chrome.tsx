@@ -9,6 +9,7 @@ import {
   ArrowRight,
   BookOpen,
   UserRound,
+  LogOut,
   Trash2,
 } from "lucide-react";
 import { useShop } from "./shop-provider";
@@ -16,7 +17,7 @@ import { Book } from "./book-art";
 import { formatMoney } from "@/lib/commerce";
 
 export function Header() {
-  const { cart, user, setBagOpen, signIn } = useShop();
+  const { cart, user, setBagOpen, signIn, signOut } = useShop();
   const count = cart.items.reduce((n, item) => n + item.quantity, 0);
 
   return (
@@ -38,14 +39,20 @@ export function Header() {
         </nav>
         <div className="header-actions">
           {user ? (
-            <Link href="/orders" className="account-link">
+            <>
+            <Link href="/orders" className="account-link" aria-label="My orders">
               <UserRound size={18} />
               <span>My orders</span>
             </Link>
+            <button className="quiet-button account-link sign-out-button" onClick={() => void signOut()}>
+              <LogOut size={18} aria-hidden="true" />
+              <span>Sign out</span>
+            </button>
+            </>
           ) : (
             <button
               className="quiet-button account-link"
-              onClick={() => void signIn("/orders")}
+              onClick={() => void signIn("/")}
             >
               <UserRound size={18} />
               <span>Sign in</span>

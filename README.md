@@ -49,11 +49,11 @@ Restart the development server after changing environment variables if changes a
 
 Project: [FolioVale Shop](https://supabase.com/dashboard/project/qolxxboicrhhrunfljbj), in the connected Daniel Jegbefumhen organization, region `eu-west-1`. Supabase reported a project cost of $0/month at creation.
 
-The schema and catalogue migrations in `supabase/migrations/` have been applied to this project. Do not run them again on that same database. Apply them in filename order only when setting up a new empty project.
+The original schema/catalogue migrations and `202610050001_order_history_deletion.sql` have been applied to this project. The Task 3 migration `202610050002_shared_account_carts.sql` is prepared but NOT applied. Do not rerun earlier migrations on this database. Apply all migrations in filename order only when setting up a new empty project.
 
 Tables: `products`, `carts`, `cart_items`, `profiles`, `orders`, and `order_items`.
 
-All tables have RLS enabled. Bag tables intentionally have no browser policies and no browser-role privileges: requests go through the server using a hashed bag token. Other browser reads are limited to active products and the authenticated user's own profile/orders. Mutation functions can only be called by the server role.
+All tables have RLS enabled. After the Task 3 migration, authenticated users may read only their own account-cart metadata and items. Cart token hashes remain server-only; guests have no direct database access. Every cart write continues through the trusted backend. Other browser reads remain limited to active products and the authenticated user's own profile/orders. Mutation functions can only be called by the server role.
 
 ## Google sign-in setup
 
@@ -100,7 +100,7 @@ All prices use integer kobo. Delivery is ₦1,500 below ₦30,000 and free from 
 
 Checkout locks the relevant bag and stock rows, calculates totals from stored prices, records the order/items/profile, decrements stock, and clears the bag in one transaction. The customer ID and email come from verified authentication. Duplicate requests with the same request ID return the existing order. New orders are limited to five per account in a ten-minute window.
 
-The guest bag follows its browser cookie. It is not automatically merged across browsers or devices. Order history follows the signed-in account. Recent history shows up to 50 orders.
+The guest bag follows its browser cookie. With Task 3 Phase 1 and its migration, sign-in merges that guest bag into one account bag shared across authenticated devices. Reload or refetch to see changes on another device; realtime subscriptions come later. Order history follows the signed-in account. Recent history shows up to 50 orders.
 
 ## Verification
 
@@ -158,3 +158,38 @@ FolioVale was built with Codex assistance. The app itself does not call an AI se
 ## Editorial image
 
 The built-in image-generation tool created `public/images/hero-editorial.png` for the storefront. Prompt: a photorealistic luxury stationery still life with three navy, dusty-blue, and parchment clothbound notebooks, restrained brass foil, a fountain pen, blue stone, soft side lighting, and no text or watermark. Catalogue illustrations remain original code-rendered covers.
+
+## Account navigation and removing orders
+
+General sign-in returns to the home page. Checkout and the orders page retain their explicit sign-in destinations. Signed-in customers can sign out from the shared header on every page.
+
+`DELETE /api/orders/{id}` removes an order from the verified owner's visible history. It requires a same-origin request and no body. Success returns `200 {"deleted":true}`; signed-out requests return 401, missing/foreign origins 403, invalid IDs or absent/other-owner/already-deleted orders 404, and database failures 503. The server never accepts a customer ID from the browser.
+
+Customers confirm **Delete from history** before removal. This stores `deleted_at` in Supabase and hides the order from history, detail pages and email retries. It does not cancel an order, restore stock, erase accounting snapshots, or permit an old checkout request to create another order. Migration `202610050001_order_history_deletion.sql` was applied to the FolioVale Supabase project on 5 October 2026. Apply it when upgrading other databases.
+
+Verification on 5 October 2026 for these account changes: TypeScript passed, all 28 automated tests passed, and the production build passed. Supabase transaction tests passed for ownership, repeated removal, hidden order/item reads through RLS, retained snapshots, unchanged stock and checkout idempotency; all test data was rolled back. Local HTTP checks returned 401 for signed-out deletion and 403 for foreign-origin deletion. This website version has not been committed, pushed or deployed.
+
+OAuth uses the exact registered `/auth/callback` URL. A short-lived, same-site `fv_auth_next` cookie stores only an allowlisted destination (`/`, `/checkout` or `/orders`) and is cleared by the callback. This avoids Supabase rejecting callback URLs with additional query parameters.
+
+## Task 3 Phase 1 API contract (pending migration)
+
+The existing endpoints and JSON representations remain in use; no mobile-specific routes or UI are added. `/api/session` returns `{user: Customer | null}` with the same fields for cookie and bearer sessions. Authenticated `/api/cart` and checkout resolve one account cart by verified Supabase user ID; guests retain the hashed `fv_bag` cookie. Browser sign-in merges guest items on the next cart read, write or checkout.
+
+All API routes validate a supplied `Authorization: Bearer <Supabase access token>` against Supabase Auth. Malformed, invalid or expired credentials return 401 even when valid cookies are present. Mutation requests with a validated bearer token do not need Origin. Cookie/guest mutations still require the existing matching Origin/Host/protocol guard. JSON validation, checkout idempotency, order ownership, soft deletion and email retry rules remain unchanged. Clients never supply a user ID, cart token or price.
+
+Migration and release notes are recorded in the Task 3 Phase 1 handoff below. Do not deploy this backend before its new migration is applied.
+
+### Task 3 Phase 1 handoff
+
+See [TASK3_PHASE1.md](TASK3_PHASE1.md) for the complete change list, database details, migration instructions and deployment risks. This phase adds backend support only. The existing `mobile/` folder was left untouched. No commit, push, deployment, new provider resource or Task 3 live migration was performed.
+
+Disposable database verification (never connects to Supabase):
+
+```sh
+npm install --prefix output/db-check --cache output/npm-cache --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @electric-sql/pglite
+node tests/database-runner.mjs
+```
+
+PGlite is used only under ignored verification output; it is not an application dependency. These checks validate PostgreSQL schema, functions, policies and transaction behavior. They do not replace a live Supabase Realtime subscription or multi-connection concurrency test.
+
+Final Phase 1 verification on 5 October 2026: 39 automated tests, TypeScript and the production build passed. Both disposable database scripts passed. Local production-server checks returned 401 for invalid bearer credentials, 200 for anonymous cart reads and 403 for guest writes without Origin. The shared-cart migration remains unapplied, so authenticated cart use with this new local backend requires that migration first.
