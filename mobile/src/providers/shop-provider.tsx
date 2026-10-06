@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { randomUUID } from 'expo-crypto';
 import { createGuestStore, guestCart, type GuestItem } from '@/lib/guest-cart';
 import { createCheckoutFlow, type CheckoutResult } from '@/lib/checkout-flow';
+import { createCartRealtimeSync, type CartRealtimeClient } from '@/lib/cart-realtime';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, Platform } from 'react-native';
@@ -49,6 +50,9 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null);
   const [guestStore] = useState(() => createGuestStore(AsyncStorage));
   const [checkoutFlow] = useState(() => createCheckoutFlow(AsyncStorage, randomUUID, api));
+  const realtimeSync = useRef<ReturnType<typeof createCartRealtimeSync>>(null);
+  const realtimeStatus = useRef<string>('CLOSED');
+  const realtimeError = useRef<unknown>(null);
   const accountFlight = useRef<{ id: string; epoch: number; promise: Promise<void> } | null>(null);
   const authOperations = useRef(0);
   const alive = useRef(false);
@@ -122,6 +126,17 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     finally { if (accountFlight.current?.promise === promise) accountFlight.current = null; }
   }, [guestStore, checkoutFlow, restoreGuest]);
 
+  const reconcileAccountCart = useCallback(async () => {
+    const id = identity.current;
+    if (!id || !alive.current) return;
+    const epoch = generation.current;
+    const flight = accountFlight.current;
+    if (flight?.id === id && flight.epoch === epoch) await flight.promise;
+    if (!alive.current || identity.current !== id || generation.current !== epoch) return;
+    const nextCart = await api.cart(id);
+    if (alive.current && identity.current === id && generation.current === epoch) setCart(nextCart);
+  }, []);
+
   useEffect(() => {
     alive.current = true;
     let cancelled = false;
@@ -143,8 +158,10 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     void Promise.resolve().then(loadProducts);
     void Promise.resolve().then(restoreGuest);
     const updateRefresh = (state: string) => {
-      if (state === 'active') supabase.auth.startAutoRefresh();
-      else supabase.auth.stopAutoRefresh();
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+        void realtimeSync.current?.reconcileNow();
+      } else supabase.auth.stopAutoRefresh();
     };
     const appListener = Platform.OS !== 'web' ? AppState.addEventListener('change', updateRefresh) : null;
     if (Platform.OS !== 'web') updateRefresh(AppState.currentState);
@@ -160,6 +177,24 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (accountId) void Promise.resolve().then(loadAccount);
   }, [accountId, authRevision, loadAccount]);
+
+  useEffect(() => {
+    const sync = createCartRealtimeSync({
+      client: supabase as unknown as CartRealtimeClient,
+      userId: accountId,
+      reconcile: reconcileAccountCart,
+      onStatus: (status) => {
+        realtimeStatus.current = status;
+        if (status === 'SUBSCRIBED') realtimeError.current = null;
+      },
+      onError: (error) => { realtimeError.current = error; },
+    });
+    realtimeSync.current = sync;
+    return () => {
+      if (realtimeSync.current === sync) realtimeSync.current = null;
+      if (sync) void sync.stop();
+    };
+  }, [accountId, reconcileAccountCart]);
 
   const refresh = useCallback(async () => {
     if (refreshLock.current || mutation.current) return;

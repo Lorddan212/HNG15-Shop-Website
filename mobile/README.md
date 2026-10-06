@@ -1,6 +1,6 @@
 # FolioVale Mobile
 
-Expo SDK 57, React Native, TypeScript, and Expo Router. The storefront uses the existing FolioVale API. Google sign-in uses the same Supabase project as the website. The next parity phase adds a local guest cart and authenticated pay-on-delivery checkout.
+Expo SDK 57, React Native, TypeScript, and Expo Router. The storefront uses the existing FolioVale API. Google sign-in uses the same Supabase project as the website. Guests have a persistent local cart, signed-in customers have pay-on-delivery checkout, and authenticated account carts reconcile from website changes through Supabase Realtime.
 
 ## Run locally
 
@@ -18,13 +18,14 @@ The native app is the target. A browser preview may be blocked by the production
 - `src/app/checkout.tsx`: Delivery form and saved-order confirmation.
 - `src/lib/guest-cart.ts`: Persistent guest items and resumable merge journal.
 - `src/lib/checkout-flow.ts`: Delivery validation and retained checkout attempts.
-- `src/providers/shop-provider.tsx`: Session restoration, shared state, auth listener and refresh.
+- `src/providers/shop-provider.tsx`: Session restoration, shared state, auth listener, foreground reconciliation and account-cart Realtime lifecycle.
+- `src/lib/cart-realtime.ts`: Authenticated `public.carts` UPDATE subscription, debounce, in-flight guard and cleanup.
 - `src/lib/api-client.ts`: Existing `/api/products`, `/api/session`, `/api/cart` and `/api/checkout` contracts. Private requests require the latest session token and omit cookies. Guest cart operations stay on the device. No automatic network mutation retries.
 - `src/lib/supabase.ts`: One client; AsyncStorage persists native sessions and foreground activity controls token refresh.
 
-Continue with Google starts Supabase S256 PKCE and opens the system browser. The exact callback is `foliovale://auth/callback`. The SDK exchanges the one-time code with its stored verifier, persists the real session, and triggers customer/cart refresh. Realtime remains out of scope; there is no test login.
+Continue with Google starts Supabase S256 PKCE and opens the system browser. The exact callback is `foliovale://auth/callback`. The SDK exchanges the one-time code with its stored verifier, persists the real session, and triggers customer/cart refresh. There is no test login.
 
-The website and mobile app share account carts through the existing backend. Pull to refresh reads current data; this phase has no live cart subscriptions. Sign-out calls `supabase.auth.signOut({ scope: 'local' })`. Mobile user/cart state and the persisted mobile session are cleared while public browsing remains available. The website and other devices remain signed in independently; mobile sign-out does not intentionally revoke their sessions.
+The website and mobile app share account carts through the existing backend. Signed-in mobile sessions subscribe to `public.carts` UPDATE events filtered by their Supabase UUID. Realtime is only a notification layer: every event is debounced and reconciled through authenticated `GET /api/cart`, which remains the source of truth. Pull to refresh and foreground reconciliation still recover missed events. Guest carts remain local and create no Realtime channel. Sign-out removes the account channel and calls `supabase.auth.signOut({ scope: 'local' })`. Mobile user/cart state and the persisted mobile session are cleared while public browsing remains available. The website and other devices remain signed in independently; mobile sign-out does not intentionally revoke their sessions.
 
 Native screen branding is FolioVale. The generated launcher icon assets remain from Expo initialization and should be replaced before a distribution build.
 
@@ -56,18 +57,26 @@ The Expo Crypto UUID is stored before submission under `foliovale.checkout-attem
 
 Success shows the saved reference, server total, Pay on delivery and no online payment taken. It refetches the authenticated cart and states **Your cart is cleared** only when that response is empty. Refetch failure preserves the saved order and offers confirmation retry without another checkout POST. New cart items from another device are not deleted. Email acceptance is not inbox delivery; existing Mailgun sandbox recipient restrictions still apply.
 
-Local-only Supabase sign-out, Google OAuth and the shared Supabase project are preserved. No new dependencies, native settings, website behavior, database migrations, payment providers or Realtime subscriptions were added.
+Local-only Supabase sign-out, Google OAuth and the shared Supabase project are preserved. No new dependencies, native settings, website behavior, database migrations or payment providers were added.
+
+## Realtime account-cart synchronization
+
+The authenticated channel is named `account-cart:<user-id>` and listens only for `UPDATE` on `public.carts` with filter `user_id=eq.<user-id>`. The Phase 1 migration already publishes safe cart metadata and grants authenticated owners SELECT access to only their own cart, so no new database migration is required. The client never reads `token_hash` and never writes cart tables directly.
+
+A 250 ms debounce coalesces duplicate parent-cart notifications. Only one reconciliation fetch runs at a time; another signal received during that fetch schedules one follow-up. `SUBSCRIBED` triggers an immediate API reconciliation, and returning the native app to the foreground also reconciles once. `CHANNEL_ERROR`, `TIMED_OUT` and `CLOSED` are tracked internally without replacing a usable cart with a technical WebSocket error. User changes, sign-out and unmount clear timers and call `supabase.removeChannel` for the old channel.
 
 ### Physical-device checks still required
 
-Use the existing Android development build with `npx expo start --dev-client`; this phase does not request an EAS rebuild.
+Use the existing Android development build with `npx expo start --dev-client`; this JavaScript-only phase does not request an EAS rebuild.
 
 1. Guest add/quantity/remove, delivery thresholds and app-restart persistence.
 2. Google login with an existing website cart, capped combined quantities, repeated auth events and interrupted merge recovery.
 3. Delivery form, keyboard layout, validation, back navigation, empty cart and expired session.
-4. Test order submission, saved reference/total and cleared account cart on both clients after refresh.
-5. Lost checkout response and app restart: retry and confirm only one order exists.
-6. Stock-change handling, account switching and local sign-out while the website stays signed in.
+4. With the same Google account signed in on website and mobile, change the website cart while the mobile Cart screen is visible and confirm it updates without pull-to-refresh.
+5. Background the mobile app, change the website cart, reopen mobile and confirm foreground reconciliation catches up.
+6. Test order submission, saved reference/total and cleared account cart on both clients.
+7. Lost checkout response and app restart: retry and confirm only one order exists.
+8. Stock-change handling, account switching and local sign-out while the website stays signed in; the old account channel must stop receiving updates.
 
 Tests use controlled responses and do not create production orders. Device behavior and email delivery require separate verification.
 
