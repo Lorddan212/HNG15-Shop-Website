@@ -17,7 +17,7 @@ export default function CartScreen() {
       <Text accessibilityRole="header" style={common.title}>Your cart</Text>
       <ErrorNotice message={shop.accountError} retry={() => void shop.refresh()} busy={busy} />
       {shop.accountLoading && !shop.user ? <Loading label="Opening your cart…" /> : !shop.hasSession
-        ? <EmptyState title="Sign in required" detail="Your FolioVale account keeps your selection together across devices. Visit Account to see what comes next."
+        ? <EmptyState title="Sign in required" detail="Sign in to your FolioVale account to save your selection and access the same cart across devices."
             action="Go to Account" onPress={() => router.navigate('/account')} />
         : !shop.user && shop.accountError ? null
           : !shop.cart.items.length ? <EmptyState title="Start with a blank page" detail="Your cart is empty. Find a notebook, a planner, or a set to make your own."

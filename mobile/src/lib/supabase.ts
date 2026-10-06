@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import './native-crypto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
@@ -10,5 +11,6 @@ export const supabase = createClient(config.supabaseUrl, config.supabasePublisha
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
+    flowType: 'pkce',
   },
 });

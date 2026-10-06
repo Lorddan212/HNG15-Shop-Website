@@ -1,4 +1,4 @@
-# FolioVale — Agent Guidelines
+# FolioVale â€” Agent Guidelines
 
 ## Purpose
 
@@ -34,7 +34,7 @@ Use FolioVale branding without internship or HNG references in customer-facing c
 - Keep RLS enabled. Browser roles may read active products and their own orders/profile. The applied Task 3 migration allows authenticated users to read only their own cart metadata/items; token_hash stays server-only. All writes remain server-only.
 - Resolve authenticated carts by verified user ID through the service-role-only resolve_account_cart function. Never promote a guest cookie hash to an account-cart token. Merge under database locks and preserve quantity/stock caps.
 - Only a successfully verified Bearer request may omit Origin on mutations. Cookie and guest requests retain the same-origin check. Never infer authorization from a header merely being present.
-- Task 3 Phase 1 is complete: the shared-cart migration is applied and the production backend supports verified Bearer tokens. Phase 2B adds the mobile Shop, Cart, and Account foundation using the existing API routes. Google OAuth, mobile checkout, and realtime subscriptions require Phase 3 or later authorization. Do not add /api/mobile routes or fake mobile sessions.
+- Task 3 Phase 1 is complete: the shared-cart migration is applied and the production backend supports verified Bearer tokens. Phase 2B adds the mobile Shop, Cart, and Account foundation using the existing API routes. Phase 3 adds native Google OAuth with Supabase S256 PKCE, the exact foliovale://auth/callback deep link, and persisted native sessions. Mobile checkout and realtime subscriptions remain out of scope. Preserve the existing website callback and use the same Supabase project; never trust callback identity fields. Do not add /api/mobile routes or fake mobile sessions.
 - Calculate totals and stock adjustments in the checkout database transaction. Never accept client prices.
 - Preserve checkout idempotency and stock locking. A repeated request ID must return the same order.
 - Preserve order snapshots even if catalogue prices change.

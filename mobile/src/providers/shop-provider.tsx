@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, Platform } from 'react-native';
 import { api } from '@/lib/api';
+import { signInWithGoogle, completeGoogleSignIn, authErrorMessage } from '@/lib/google-auth';
 import { ApiError } from '@/lib/api-client';
 import { supabase } from '@/lib/supabase';
 import { EMPTY_CART, type Cart, type CartChange, type Customer, type Product } from '@/lib/types';
@@ -10,7 +11,8 @@ type ShopState = {
   products: Product[]; cart: Cart; user: Customer | null; hasSession: boolean;
   loading: boolean; productsLoading: boolean; accountLoading: boolean; refreshing: boolean;
   error: string | null; productError: string | null; accountError: string | null;
-  pendingProduct: string | null; signingOut: boolean;
+  pendingProduct: string | null; signingOut: boolean; signingIn: boolean; authError: string | null;
+  googleSignIn: () => Promise<void>; finishGoogleSignIn: (url: string) => Promise<void>;
   refresh: () => Promise<void>; changeCart: (change: CartChange) => Promise<boolean>;
   signOut: () => Promise<void>;
 };
@@ -31,6 +33,9 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const [accountError, setAccountError] = useState<string | null>(null);
   const [pendingProduct, setPendingProduct] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const authOperations = useRef(0);
   const alive = useRef(false);
   const identity = useRef<string | null>(null);
   const generation = useRef(0);
@@ -149,13 +154,30 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     } finally { mutation.current = false; if (alive.current) setPendingProduct(null); }
   }, [accountLoading, loadAccount, signingOut]);
 
+  const runGoogleAuth = useCallback(async (callbackUrl?: string) => {
+    authOperations.current += 1;
+    setSigningIn(true); setAuthError(null);
+    try {
+      if (callbackUrl) await completeGoogleSignIn(callbackUrl);
+      else await signInWithGoogle();
+      // SIGNED_IN refreshes /api/session and /api/cart through the existing
+      // listener. No identity or token is copied from callback URL fields.
+    } catch (error) { if (alive.current) setAuthError(authErrorMessage(error)); }
+    finally {
+      authOperations.current -= 1;
+      if (alive.current && authOperations.current === 0) setSigningIn(false);
+    }
+  }, []);
+  const googleSignIn = useCallback(() => runGoogleAuth(), [runGoogleAuth]);
+  const finishGoogleSignIn = useCallback((url: string) => runGoogleAuth(url), [runGoogleAuth]);
+
   const signOut = useCallback(async () => {
-    if (!identity.current || signingOut || mutation.current) return;
+    if (!identity.current || signingOut || mutation.current || authOperations.current) return;
     setSigningOut(true);
     try {
       const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) throw error;
-      acceptSession(null);
+      acceptSession(null); setAuthError(null);
     } catch { if (alive.current) setAccountError('Unable to sign out. Please try again.'); }
     finally { if (alive.current) setSigningOut(false); }
   }, [acceptSession, signingOut]);
@@ -163,7 +185,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   return <ShopContext.Provider value={{ products, cart, user, hasSession: Boolean(accountId),
     loading: restoring || productsLoading, productsLoading, accountLoading: restoring || accountLoading,
     refreshing, productError, accountError, error: productError ?? accountError,
-    pendingProduct, signingOut, refresh, changeCart, signOut }}>{children}</ShopContext.Provider>;
+    pendingProduct, signingOut, signingIn, authError, googleSignIn, finishGoogleSignIn, refresh, changeCart, signOut }}>{children}</ShopContext.Provider>;
 }
 
 export function useShop() {
