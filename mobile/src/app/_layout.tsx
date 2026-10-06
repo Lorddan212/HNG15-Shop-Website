@@ -8,6 +8,6 @@ const theme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: c
 export default function RootLayout() {
   return <ThemeProvider value={theme}><ShopProvider>
     <StatusBar style="dark" />
-    <Stack screenOptions={{ headerShown: false }}><Stack.Screen name="(tabs)" /><Stack.Screen name="auth/callback" /></Stack>
+    <Stack screenOptions={{ headerShown: false }}><Stack.Screen name="(tabs)" /><Stack.Screen name="auth/callback" /><Stack.Screen name="checkout" /></Stack>
   </ShopProvider></ThemeProvider>;
 }

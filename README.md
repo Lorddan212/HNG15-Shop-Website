@@ -193,3 +193,7 @@ node tests/database-runner.mjs
 PGlite is used only under ignored verification output; it is not an application dependency. These checks validate PostgreSQL schema, functions, policies and transaction behavior. They do not replace a live Supabase Realtime subscription or multi-connection concurrency test.
 
 Final Phase 1 verification on 5 October 2026: 39 automated tests, TypeScript and the production build passed. Both disposable database scripts passed. Local production-server checks returned 401 for invalid bearer credentials, 200 for anonymous cart reads and 403 for guest writes without Origin. The shared-cart migration remains unapplied, so authenticated cart use with this new local backend requires that migration first.
+
+## Mobile guest shopping and checkout
+
+The mobile client now supports locally persisted guest carts, resumable merging into the existing account cart after Google login, and authenticated pay-on-delivery checkout through the existing API. No website behavior, database migrations, payment integration or Realtime subscription was added. See [mobile behavior, retry semantics and device checks](mobile/README.md#guest-shopping-and-checkout-parity).

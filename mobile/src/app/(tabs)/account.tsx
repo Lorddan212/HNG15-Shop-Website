@@ -22,7 +22,7 @@ export default function AccountScreen() {
               <Text style={common.body}>Your selection is saved to your account, ready whenever inspiration finds you.</Text>
               <Button title="View your cart" onPress={() => router.navigate('/cart')} />
             </> : <Text style={common.body}>Your saved session is available, but we could not load your account details. Try refreshing, or sign out and try again.</Text>}
-            <Button title="Sign out" secondary busy={shop.signingOut} disabled={Boolean(shop.pendingProduct) || shop.signingIn} onPress={() => void shop.signOut()} />
+            <Button title="Sign out" secondary busy={shop.signingOut} disabled={Boolean(shop.pendingProduct) || shop.signingIn || shop.accountLoading || shop.checkingOut} onPress={() => void shop.signOut()} />
           </View>
         : <>
             <View style={styles.introduction}><Text style={styles.folio}>F</Text>

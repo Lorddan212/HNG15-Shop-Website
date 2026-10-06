@@ -1,7 +1,7 @@
-import type { Cart, CartChange, Customer, Product } from './types';
+import type { Cart, CartChange, CheckoutRequest, Customer, Order, Product } from './types';
 
 export class ApiError extends Error {
-  constructor(message: string, public readonly status = 0) {
+  constructor(message: string, public readonly status = 0, public readonly fields: Record<string, string[]> = {}) {
     super(message);
     this.name = 'ApiError';
   }
@@ -17,7 +17,7 @@ type Options = {
 
 /** No cookie/guest-cart fallback. Only a real session can issue private requests. */
 export function createApiClient({ baseUrl, getSession, fetcher = fetch, timeoutMs = 15000 }: Options) {
-  async function request<T>(path: string, userId?: string, body?: CartChange): Promise<T> {
+  async function request<T>(path: string, userId?: string, body?: CartChange | CheckoutRequest): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (userId !== undefined) {
       let session: AuthSession | null;
@@ -42,7 +42,7 @@ export function createApiClient({ baseUrl, getSession, fetcher = fetch, timeoutM
       if (!response.ok) {
         const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
           ? payload.error : `The request could not be completed (${response.status}).`;
-        throw new ApiError(message, response.status);
+        throw new ApiError(message, response.status, payload && typeof payload === 'object' && 'fields' in payload && payload.fields && typeof payload.fields === 'object' ? payload.fields as Record<string, string[]> : {});
       }
       if (!payload || typeof payload !== 'object') throw new ApiError('The shop returned an unexpected response.');
       return payload as T;
@@ -68,6 +68,13 @@ export function createApiClient({ baseUrl, getSession, fetcher = fetch, timeoutM
       const data = await request<{ cart: Cart }>('/api/cart', userId ?? '');
       if (!data.cart || !Array.isArray(data.cart.items)) throw new ApiError('Your cart could not be read.');
       return data.cart;
+    },
+    async checkout(userId: string, input: CheckoutRequest): Promise<Order> {
+      const data = await request<{ order: Order }>('/api/checkout', userId ?? '', input);
+      if (!data.order?.id || !data.order.reference || data.order.user_id !== userId || data.order.payment_method !== 'pay_on_delivery') {
+        throw new ApiError('The order response could not be verified. Retry this checkout to recover its result.');
+      }
+      return data.order;
     },
     async changeCart(userId: string, change: CartChange): Promise<Cart> {
       const data = await request<{ cart: Cart }>('/api/cart', userId ?? '', change);

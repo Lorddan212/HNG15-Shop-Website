@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,17 +10,28 @@ import { useShop } from '@/providers/shop-provider';
 
 export default function CartScreen() {
   const shop = useShop();
-  const busy = Boolean(shop.pendingProduct) || shop.accountLoading || shop.refreshing || shop.signingOut;
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  async function checkout() {
+    setCheckoutError(null);
+    if (!shop.hasSession) { router.push('/account'); return; }
+    try {
+      if (shop.checkoutResult) await shop.finishCheckout();
+      router.push('/checkout');
+    } catch { setCheckoutError('Your previous order is saved. Finish its confirmation before starting another checkout.'); }
+  }
+  const busy = Boolean(shop.pendingProduct) || shop.accountLoading || shop.refreshing || shop.signingOut || shop.signingIn || shop.checkingOut;
   return <SafeAreaView edges={['top', 'left', 'right']} style={common.screen}>
     <ScrollView contentContainerStyle={common.content}
       refreshControl={<RefreshControl refreshing={shop.refreshing} onRefresh={() => void shop.refresh()} tintColor={colors.ink} colors={[colors.ink]} />}>
       <Header section="Your selection" />
       <Text accessibilityRole="header" style={common.title}>Your cart</Text>
+      <ErrorNotice message={checkoutError} />
       <ErrorNotice message={shop.accountError} retry={() => void shop.refresh()} busy={busy} />
-      {shop.accountLoading && !shop.user ? <Loading label="Opening your cart…" /> : !shop.hasSession
-        ? <EmptyState title="Sign in required" detail="Sign in to your FolioVale account to save your selection and access the same cart across devices."
-            action="Go to Account" onPress={() => router.navigate('/account')} />
-        : !shop.user && shop.accountError ? null
+      {!shop.hasSession && <ErrorNotice message={shop.productError} retry={() => void shop.refresh()} busy={busy} />}
+      {!shop.hasSession && <Text style={common.body}>Sign in to save and sync this cart across devices.</Text>}
+      {shop.hasSession && shop.checkoutPending && <Button title="Resume checkout" onPress={() => router.push('/checkout')} disabled={busy} />}
+      {(shop.accountLoading || (!shop.hasSession && shop.productsLoading)) && !shop.user ? <Loading label="Opening your cart…" />
+        : (shop.hasSession && !shop.user && shop.accountError) || (!shop.hasSession && shop.productError && !shop.products.length) ? null
           : !shop.cart.items.length ? <EmptyState title="Start with a blank page" detail="Your cart is empty. Find a notebook, a planner, or a set to make your own."
               action="Explore the collection" onPress={() => router.navigate('/')} />
             : <>
@@ -45,7 +57,9 @@ export default function CartScreen() {
                 <TotalRow label="Subtotal" value={money(shop.cart.subtotal_kobo)} />
                 <TotalRow label="Shipping" value={shop.cart.shipping_kobo ? money(shop.cart.shipping_kobo) : 'Free'} />
                 <View style={styles.divider} /><TotalRow label="Total" value={money(shop.cart.total_kobo)} strong />
-                <Text style={common.body}>Your cart is saved to your account. Checkout will be available in a future update.</Text>
+                <Text style={common.body}>{shop.hasSession ? 'Your cart is saved to your account.' : 'Your selection is saved on this device.'}</Text>
+                <Button title={shop.hasSession ? 'Proceed to checkout' : 'Sign in to checkout'} disabled={busy || Boolean(shop.accountError)}
+                  onPress={() => void checkout()} />
               </View>
             </>}
     </ScrollView>

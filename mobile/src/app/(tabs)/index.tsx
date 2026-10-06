@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { router } from 'expo-router';
 import { FlatList, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, EmptyState, ErrorNotice, Header, Loading } from '@/components/ui';
@@ -15,11 +14,10 @@ export default function ShopScreen() {
   const columns = width >= 380 && fontScale < 1.4 ? 2 : 1;
   const [notice, setNotice] = useState<string | null>(null);
   async function add(product: Product) {
-    if (!shop.hasSession) { router.navigate('/account'); return; }
     setNotice(null);
     if (await shop.changeCart({ product_id: product.id, quantity: 1, operation: 'add' })) setNotice(`${product.name} added to your cart.`);
   }
-  const busy = Boolean(shop.pendingProduct) || shop.accountLoading || shop.refreshing || shop.signingOut;
+  const busy = Boolean(shop.pendingProduct) || shop.accountLoading || shop.refreshing || shop.signingOut || shop.signingIn || shop.checkingOut;
   return <SafeAreaView edges={['top', 'left', 'right']} style={common.screen}>
     <FlatList key={columns} data={shop.products} keyExtractor={(item) => item.id} numColumns={columns}
       contentContainerStyle={common.content} columnWrapperStyle={columns > 1 ? styles.columns : undefined}
@@ -34,13 +32,13 @@ export default function ShopScreen() {
           {!shop.productsLoading && <Text style={styles.count}>{shop.products.length} pieces</Text>}</View>
         <ErrorNotice message={shop.productError} retry={() => void shop.refresh()} busy={shop.refreshing} />
         <ErrorNotice message={shop.accountError} retry={() => void shop.refresh()} busy={busy} />
-        {notice && shop.hasSession && <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text>}
+        {notice && <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text>}
       </View>}
       ListEmptyComponent={shop.productsLoading ? <Loading label="Opening the collection…" /> : !shop.productError
         ? <EmptyState title="A fresh page awaits" detail="There are no products available right now. Pull down to check again." /> : null}
       renderItem={({ item }) => {
         const quantity = shop.cart.items.find((entry) => entry.product_id === item.id)?.quantity ?? 0;
-        const atLimit = shop.hasSession && quantity >= Math.min(10, item.stock);
+        const atLimit = quantity >= Math.min(10, item.stock);
         return <View style={[styles.card, columns === 2 && styles.halfCard]}>
           <ProductCover product={item} />
           <View style={styles.cardBody}><Text style={styles.category}>{item.category}</Text>
