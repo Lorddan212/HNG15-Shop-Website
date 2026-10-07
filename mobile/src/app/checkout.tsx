@@ -18,7 +18,7 @@ export default function CheckoutScreen() {
         <Header section="The finishing details" />
         <Button title="Back to cart" secondary disabled={shop.checkingOut} onPress={() => router.replace('/cart')} />
         <Text accessibilityRole="header" style={common.title}>Checkout</Text>
-        {!shop.hasSession ? <EmptyState title="Your account, your order" detail="Sign in with Google to checkout. Your guest cart stays saved on this device."
+        {!shop.hasSession ? <EmptyState title="Your account, your order" detail="Sign in with Google to check out. Your guest cart stays saved on this device."
           action="Sign in to checkout" onPress={() => router.navigate('/account')} />
           : shop.checkoutResult ? <CheckoutForm key={shop.user?.id} />
             : shop.accountLoading && !shop.user ? <Loading label="Checking your account and cart…" />
@@ -74,9 +74,9 @@ function CheckoutForm() {
       <Text style={common.body}>No online payment was taken.</Text>
       {result.cart?.items.length === 0 && <Text style={styles.confirmed}>Your cart is cleared.</Text>}
       <Text style={common.body}>{result.order.email_status === 'accepted'
-        ? 'The confirmation email was accepted by the email service. Inbox delivery is not guaranteed.'
+        ? 'Your confirmation email was accepted for delivery. Check your inbox or spam folder. Your order is also saved in your account.'
         : 'Your order is saved even if the confirmation email has not arrived.'}</Text>
-      <Text style={styles.disclosure}>Checkout is currently in testing. Orders placed during this period will not be charged or dispatched.</Text>
+      <Text style={styles.disclosure}>Pay on delivery. No online payment is collected at checkout.</Text>
     </View>
     <ErrorNotice message={result.warning} retry={() => void submit()} busy={busy} />
     <ErrorNotice message={error} />
@@ -87,11 +87,11 @@ function CheckoutForm() {
   return <>
     <ErrorNotice message={error} />
     <ErrorNotice message={shop.accountError} retry={() => void shop.refresh()} busy={busy} />
-    {shop.checkoutPending && <Text style={common.body}>A checkout attempt is pending. Retry to recover its result using the same order request. If it was already saved, you will receive the original order.</Text>}
-    {retryOnly && <Text style={common.body}>The previous request may have reached the shop. Retry with the original details to confirm its result.</Text>}
+    {shop.checkoutPending && <Text style={common.body}>Your previous checkout has not been confirmed. Try again to check its status; this will not place a duplicate order.</Text>}
+    {retryOnly && <Text style={common.body}>Your order may already be saved. Keep the same details and try again to check its status.</Text>}
     {error && <Button title="Go to Account" secondary onPress={() => router.navigate('/account')} disabled={busy} />}
     <View style={common.panel}>
-      <Text style={common.heading}>Where should it go?</Text>
+      <Text style={common.heading}>Delivery details</Text>
       {(Object.keys(deliveryFields) as (keyof Delivery)[]).map(key => <View key={key} style={styles.field}>
         <Text style={styles.label}>{deliveryFields[key].label}</Text>
         <TextInput accessibilityLabel={deliveryFields[key].label} accessibilityHint={errors[key]}
@@ -114,7 +114,7 @@ function CheckoutForm() {
       <Summary label="Delivery" value={shop.cart.shipping_kobo ? money(shop.cart.shipping_kobo) : 'Free'} />
       <Summary label="Total" value={money(shop.cart.total_kobo)} />
       <Text style={common.body}>Stock and prices are checked again when your order is placed.</Text>
-      <Text style={styles.disclosure}>Checkout is currently in testing. Orders placed during this period will not be charged or dispatched.</Text>
+      <Text style={styles.disclosure}>Pay on delivery. No online payment is collected at checkout.</Text>
       <Button title={`Place order · ${money(shop.cart.total_kobo)}`} busy={shop.checkingOut} disabled={busy || Boolean(shop.accountError)} onPress={() => void submit()} />
     </View>
   </>;

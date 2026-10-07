@@ -21,7 +21,7 @@ function parseCallback(value: string): URL {
   let url: URL;
   try { url = new URL(value); } catch { throw new GoogleAuthError('This sign-in link is invalid. Please start again.'); }
   if (url.protocol !== 'foliovale:' || url.hostname !== 'auth' || url.pathname !== '/callback' || url.port || url.username || url.password || url.hash) {
-    throw new GoogleAuthError('This sign-in link is not a FolioVale callback. Please start again.');
+    throw new GoogleAuthError('This sign-in link is not valid for FolioVale. Please start again.');
   }
   return url;
 }

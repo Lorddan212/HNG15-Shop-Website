@@ -53,9 +53,9 @@ export default function CartScreen() {
                     onPress={() => void shop.changeCart({ product_id: item.product_id, quantity: 0, operation: 'set' })} />
                 </View>
               </View>)}
-              <View style={common.panel}><Text style={common.heading}>Your selection, together</Text>
+              <View style={common.panel}><Text style={common.heading}>Order summary</Text>
                 <TotalRow label="Subtotal" value={money(shop.cart.subtotal_kobo)} />
-                <TotalRow label="Shipping" value={shop.cart.shipping_kobo ? money(shop.cart.shipping_kobo) : 'Free'} />
+                <TotalRow label="Delivery" value={shop.cart.shipping_kobo ? money(shop.cart.shipping_kobo) : 'Free'} />
                 <View style={styles.divider} /><TotalRow label="Total" value={money(shop.cart.total_kobo)} strong />
                 <Text style={common.body}>{shop.hasSession ? 'Your cart is saved to your account.' : 'Your selection is saved on this device.'}</Text>
                 <Button title={shop.hasSession ? 'Proceed to checkout' : 'Sign in to checkout'} disabled={busy || Boolean(shop.accountError)}

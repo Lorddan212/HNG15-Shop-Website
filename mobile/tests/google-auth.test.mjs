@@ -59,7 +59,7 @@ test('Android dismissal after Router success does not report cancellation', asyn
 for (const bad of ['https://shop.example/auth/callback?code=x', 'foliovale://evil/callback?code=x', 'foliovale://auth/callback/extra?code=x', 'foliovale://user@auth/callback?code=x', 'foliovale://auth:90/callback?code=x', 'foliovale://auth/callback#access_token=untrusted', 'not-a-url']) {
   test(`rejects wrong callback target or token fragment: ${bad}`, async () => {
     const { flow, calls, storage } = setup(); await pending(storage);
-    await assert.rejects(flow.complete(bad), /callback|invalid/); assert.equal(calls.exchange.length, 0);
+    await assert.rejects(flow.complete(bad), /not valid|invalid/); assert.equal(calls.exchange.length, 0);
   });
 }
 for (const query of ['', '?code=', '?code=a&code=b', '?code=a&access_token=untrusted', '?code=%20', '?error=access_denied&error_description=private-detail']) {

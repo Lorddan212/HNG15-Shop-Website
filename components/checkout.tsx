@@ -57,19 +57,19 @@ export function Checkout() {
       </Link>
       <div className="checkout-title">
         <div>
-          <p className="section-kicker">A few details, then it is yours.</p>
-          <h1>Make it a good mail day.</h1>
+          <p className="section-kicker">Your order details</p>
+          <h1>Checkout</h1>
         </div>
         <span>
           <ShieldCheck size={18} /> Pay on delivery
         </span>
       </div>
       {loading ? (
-        <p className="loading-state">Loading your bag…</p>
+        <p className="loading-state">Loading your cart…</p>
       ) : !connected ? (
         <div className="empty-panel">
-          <h2>The shop is getting ready.</h2>
-          <p>Checkout will open once the shop connection is complete.</p>
+          <h2>Checkout is temporarily unavailable.</h2>
+          <p>Please refresh the page or try again later.</p>
           <Link className="primary-button" href="/#collection">
             Browse the collection
           </Link>
@@ -77,10 +77,10 @@ export function Checkout() {
       ) : cart.items.length === 0 ? (
         <div className="empty-panel">
           <ShoppingBag size={40} />
-          <h2>Your bag is waiting.</h2>
-          <p>Add a notebook or planner before checking out.</p>
+          <h2>Your cart is empty.</h2>
+          <p>Add a notebook, planner, or set before checking out.</p>
           <Link className="primary-button" href="/#collection">
-            Find your paper companion
+            Explore the collection
           </Link>
         </div>
       ) : (
@@ -99,13 +99,13 @@ export function Checkout() {
                   </p>
                   <span>{user.email}</span>
                   <p className="small muted">
-                    Your confirmation email will go to this address.
+                    This is the email address associated with your order.
                   </p>
                 </div>
               ) : (
                 <div>
                   <p className="muted">
-                    Sign in to save your order and receive your confirmation.
+                    Sign in with Google to place your order and keep it in your account.
                   </p>
                   <button
                     className="google-button"
@@ -143,7 +143,7 @@ export function Checkout() {
                     name="phone"
                     type="tel"
                     autoComplete="tel"
-                    placeholder="e.g. 0801 234 5678"
+                    placeholder="Your phone number"
                     required
                     minLength={7}
                     maxLength={25}
@@ -252,14 +252,13 @@ export function Checkout() {
               <div className="payment-option payment-disabled">
                 <span className="radio-dot" />
                 <div>
-                  <strong>Online Payment</strong>
-                  <p>Card and Bank Payment Coming Soon.</p>
+                  <strong>Online payment</strong>
+                  <p>Not available yet.</p>
                 </div>
               </div>
             </section>
             <p className="demo-note">
-              Checkout is currently in testing. Orders placed during this period
-              will not be charged or dispatched.
+              Pay on delivery. No online payment is collected at checkout.
             </p>
             {error && (
               <p className="form-error" role="alert">
@@ -283,7 +282,7 @@ export function Checkout() {
           </form>
           <aside className="order-summary">
             <h2>
-              In your bag{" "}
+              In your cart{" "}
               <span>({cart.items.reduce((n, i) => n + i.quantity, 0)})</span>
             </h2>
             {cart.items.map((item) => (
@@ -352,7 +351,7 @@ export function Checkout() {
               </p>
             </div>
             <p className="small muted">
-              Prices shown in Nigerian naira. Delivery is free from ₦30,000.
+              Prices shown in Nigerian naira. Delivery fee calculated at checkout · Free from ₦30,000.
             </p>
           </aside>
         </div>

@@ -1,5 +1,5 @@
 import type { Product } from './types';
-// Mirrors the database migrations. Preview data only.
+// Website fallback catalogue; includes description corrections from migration 202610060001 (not yet applied remotely).
 export const previewProducts:Product[] = [
   {
     "id": "10000000-0000-4000-8000-000000000001",
@@ -119,7 +119,7 @@ export const previewProducts:Product[] = [
     "color": "#506f88",
     "cover_label": "aster",
     "subtitle": "Ruled pages, quiet mornings",
-    "description": "A A5 ruled notebook with 192 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 ruled notebook with 192 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "192 ruled pages",
@@ -155,7 +155,7 @@ export const previewProducts:Product[] = [
     "color": "#172536",
     "cover_label": "nocturne",
     "subtitle": "Notes after the world goes quiet",
-    "description": "A A5 ruled notebook with 240 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 ruled notebook with 240 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "240 ruled pages",
@@ -173,7 +173,7 @@ export const previewProducts:Product[] = [
     "color": "#769baa",
     "cover_label": "harbour",
     "subtitle": "Keep your ideas in one place",
-    "description": "A A5 plain notebook with 160 pages for sketching, free writing, and ideas that need an open page. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 plain notebook with 160 pages for sketching, free writing, and ideas that need an open page. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "160 plain pages",
@@ -191,7 +191,7 @@ export const previewProducts:Product[] = [
     "color": "#344b68",
     "cover_label": "atlas",
     "subtitle": "Room for the bigger picture",
-    "description": "A A4 dot-grid notebook with 160 pages for bullet journals, diagrams, and flexible layouts. 120 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A4 dot-grid notebook with 160 pages for bullet journals, diagrams, and flexible layouts. 120 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A4 · 210 × 297 mm",
       "160 dot-grid pages",
@@ -209,7 +209,7 @@ export const previewProducts:Product[] = [
     "color": "#85968e",
     "cover_label": "field notes",
     "subtitle": "For thoughts along the way",
-    "description": "A A6 ruled notebook with 96 pages for daily notes, longer thoughts, and everyday lists. 90 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A6 ruled notebook with 96 pages for daily notes, longer thoughts, and everyday lists. 90 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A6 · 105 × 148 mm",
       "96 ruled pages",
@@ -245,7 +245,7 @@ export const previewProducts:Product[] = [
     "color": "#41617a",
     "cover_label": "studio",
     "subtitle": "Ideas in their first form",
-    "description": "A A5 plain notebook with 128 pages for sketching, free writing, and ideas that need an open page. 140 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 plain notebook with 128 pages for sketching, free writing, and ideas that need an open page. 140 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "128 plain pages",
@@ -263,7 +263,7 @@ export const previewProducts:Product[] = [
     "color": "#a0afb9",
     "cover_label": "letters",
     "subtitle": "Words worth holding on to",
-    "description": "A A5 ruled notebook with 192 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 ruled notebook with 192 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "192 ruled pages",
@@ -299,7 +299,7 @@ export const previewProducts:Product[] = [
     "color": "#3d6473",
     "cover_label": "mosaic",
     "subtitle": "Bring the pieces together",
-    "description": "A A5 dot-grid notebook with 192 pages for bullet journals, diagrams, and flexible layouts. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 dot-grid notebook with 192 pages for bullet journals, diagrams, and flexible layouts. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "192 dot-grid pages",
@@ -317,7 +317,7 @@ export const previewProducts:Product[] = [
     "color": "#9cb9c2",
     "cover_label": "coastline",
     "subtitle": "A fresh perspective on paper",
-    "description": "A A5 ruled notebook with 160 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 ruled notebook with 160 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "160 ruled pages",
@@ -335,7 +335,7 @@ export const previewProducts:Product[] = [
     "color": "#527e84",
     "cover_label": "stillwater",
     "subtitle": "Leave a thought to settle",
-    "description": "A A5 plain notebook with 192 pages for sketching, free writing, and ideas that need an open page. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 plain notebook with 192 pages for sketching, free writing, and ideas that need an open page. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "192 plain pages",
@@ -353,7 +353,7 @@ export const previewProducts:Product[] = [
     "color": "#c9c1b0",
     "cover_label": "linen",
     "subtitle": "Simple pages, soft texture",
-    "description": "A A5 ruled notebook with 192 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 ruled notebook with 192 pages for daily notes, longer thoughts, and everyday lists. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "192 ruled pages",
@@ -371,7 +371,7 @@ export const previewProducts:Product[] = [
     "color": "#454d59",
     "cover_label": "graphite",
     "subtitle": "Sketch it before it disappears",
-    "description": "A A4 plain notebook with 96 pages for sketching, free writing, and ideas that need an open page. 160 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A4 plain notebook with 96 pages for sketching, free writing, and ideas that need an open page. 160 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A4 · 210 × 297 mm",
       "96 plain pages",
@@ -389,7 +389,7 @@ export const previewProducts:Product[] = [
     "color": "#7d9585",
     "cover_label": "meadow",
     "subtitle": "Let a small idea grow",
-    "description": "A A5 dot-grid notebook with 160 pages for bullet journals, diagrams, and flexible layouts. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 dot-grid notebook with 160 pages for bullet journals, diagrams, and flexible layouts. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "160 dot-grid pages",
@@ -443,7 +443,7 @@ export const previewProducts:Product[] = [
     "color": "#637194",
     "cover_label": "moonlit",
     "subtitle": "Keep a little room for wonder",
-    "description": "A A5 dot-grid notebook with 192 pages for bullet journals, diagrams, and flexible layouts. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 dot-grid notebook with 192 pages for bullet journals, diagrams, and flexible layouts. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "192 dot-grid pages",
@@ -461,7 +461,7 @@ export const previewProducts:Product[] = [
     "color": "#738caa",
     "cover_label": "everyday",
     "subtitle": "For lists, thoughts, and loose ends",
-    "description": "A A5 ruled notebook with 128 pages for daily notes, longer thoughts, and everyday lists. 90 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A5 ruled notebook with 128 pages for daily notes, longer thoughts, and everyday lists. 90 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A5 · 148 × 210 mm",
       "128 ruled pages",
@@ -479,7 +479,7 @@ export const previewProducts:Product[] = [
     "color": "#233f6a",
     "cover_label": "folio",
     "subtitle": "An open space for serious ideas",
-    "description": "A A4 grid notebook with 192 pages for diagrams, calculations, and structured notes. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
+    "description": "An A4 grid notebook with 192 pages for diagrams, calculations, and structured notes. 100 gsm paper and a cloth-style cover give your ideas a considered home.",
     "specs": [
       "A4 · 210 × 297 mm",
       "192 grid pages",
@@ -803,7 +803,7 @@ export const previewProducts:Product[] = [
     "color": "#31597d",
     "cover_label": "writing pair",
     "subtitle": "A desk-to-pocket partnership",
-    "description": "A coordinated stationery set for planning, writing, and everyday ideas. Includes one A5 Aster ruled notebook, plus one a6 field notes notebook. Presented together so it is ready for a fresh start.",
+    "description": "A coordinated stationery set for planning, writing, and everyday ideas. Includes one A5 Aster ruled notebook, plus one A6 Field Notes notebook. Presented together so it is ready for a fresh start.",
     "specs": [
       "One A5 Aster ruled notebook",
       "One A6 Field Notes notebook",
@@ -821,7 +821,7 @@ export const previewProducts:Product[] = [
     "color": "#759ba8",
     "cover_label": "planner pair",
     "subtitle": "Look ahead, one week at a time",
-    "description": "A coordinated stationery set for planning, writing, and everyday ideas. Includes one A5 Weekender planner, plus one a5 daybook notebook. Presented together so it is ready for a fresh start.",
+    "description": "A coordinated stationery set for planning, writing, and everyday ideas. Includes one A5 Weekender planner, plus one A5 Daybook notebook. Presented together so it is ready for a fresh start.",
     "specs": [
       "One A5 Weekender planner",
       "One A5 Daybook notebook",
@@ -857,7 +857,7 @@ export const previewProducts:Product[] = [
     "color": "#4b687c",
     "cover_label": "studio set",
     "subtitle": "Give your next idea some space",
-    "description": "A coordinated stationery set for sketching and creative work. Includes one A5 Studio plain notebook, plus one a4 graphite sketchbook. Presented together so it is ready for a fresh start.",
+    "description": "A coordinated stationery set for sketching and creative work. Includes one A5 Studio plain notebook, plus one A4 Graphite sketchbook. Presented together so it is ready for a fresh start.",
     "specs": [
       "One A5 Studio plain notebook",
       "One A4 Graphite sketchbook",
@@ -875,7 +875,7 @@ export const previewProducts:Product[] = [
     "color": "#8eaa9f",
     "cover_label": "daily ritual",
     "subtitle": "An intentional start, every day",
-    "description": "A coordinated stationery set for planning, writing, and everyday ideas. Includes one A5 First Light daily planner, plus one a6 pocket notes notebook. Presented together so it is ready for a fresh start.",
+    "description": "A coordinated stationery set for planning, writing, and everyday ideas. Includes one A5 First Light daily planner, plus one A6 Pocket Notes notebook. Presented together so it is ready for a fresh start.",
     "specs": [
       "One A5 First Light daily planner",
       "One A6 Pocket Notes notebook",
@@ -911,7 +911,7 @@ export const previewProducts:Product[] = [
     "color": "#244262",
     "cover_label": "workday edit",
     "subtitle": "For a well-considered workday",
-    "description": "A coordinated stationery set for planning, writing, and everyday ideas. Includes one B5 Archive notebook, plus one a5 focus daily planner. Presented together so it is ready for a fresh start.",
+    "description": "A coordinated stationery set for planning, writing, and everyday ideas. Includes one B5 Archive notebook, plus one A5 Focus daily planner. Presented together so it is ready for a fresh start.",
     "specs": [
       "One B5 Archive notebook",
       "One A5 Focus daily planner",

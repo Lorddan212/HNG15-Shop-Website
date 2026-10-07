@@ -42,7 +42,7 @@ export function createCheckoutFlow(storage: Storage, randomUUID: () => string, a
         const { delivery, errors } = validateDelivery(input);
         if (Object.keys(errors).length) throw new Error('Check your delivery information and try again.');
         const savedId = await storage.getItem(checkoutKey(id));
-        if (savedId && !uuid.test(savedId)) throw new Error('The saved checkout reference could not be read. Restore device storage before retrying.');
+        if (savedId && !uuid.test(savedId)) throw new Error('We could not reopen your saved checkout. Please restart the app and try again.');
         attempt = { ...delivery, request_id: savedId ?? randomUUID() };
         await storage.setItem(checkoutKey(id), attempt.request_id);
         attempts.set(id, attempt);
@@ -60,7 +60,7 @@ export function createCheckoutFlow(storage: Storage, randomUUID: () => string, a
     check();
     let warning: string | null = null;
     try { await storage.removeItem(checkoutKey(id)); }
-    catch { warning = 'Your order is saved. Retry confirmation to finish clearing the local checkout reference.'; }
+    catch { warning = 'Your order is saved. Try again to finish confirming it.'; }
     let cart: Cart | null = null;
     try {
       cart = await api.cart(id);

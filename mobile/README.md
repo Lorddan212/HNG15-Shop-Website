@@ -27,7 +27,7 @@ Continue with Google starts Supabase S256 PKCE and opens the system browser. The
 
 The website and mobile app share account carts through the existing backend. Signed-in mobile sessions subscribe to `public.carts` UPDATE events filtered by their Supabase UUID. Realtime is only a notification layer: every event is debounced and reconciled through authenticated `GET /api/cart`, which remains the source of truth. Pull to refresh and foreground reconciliation still recover missed events. Guest carts remain local and create no Realtime channel. Sign-out removes the account channel and calls `supabase.auth.signOut({ scope: 'local' })`. Mobile user/cart state and the persisted mobile session are cleared while public browsing remains available. The website and other devices remain signed in independently; mobile sign-out does not intentionally revoke their sessions.
 
-Native screen branding is FolioVale. The generated launcher icon assets remain from Expo initialization and should be replaced before a distribution build.
+Launcher, adaptive, monochrome, splash and favicon branding use the canonical open-book mark from `../public/favicon.svg`. The preview APK profile is configured without the development client; see [preview preparation and content audit](../CONTENT_AUDIT.md). No preview APK has been built as part of this preparation.
 
 ## Verification
 

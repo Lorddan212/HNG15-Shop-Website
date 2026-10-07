@@ -21,7 +21,7 @@ Build and maintain the existing FolioVale notebook and planner shop. Keep work f
 
 The FolioVale catalogue contains 53 sample products: 25 notebooks, 18 planners, and 10 sets. Checkout records pay-on-delivery orders. Do not add real payments, unrelated dashboards, or unrequested dependencies.
 Preserve the ink-blue, pale-blue, paper-white design, serif headings, original notebook illustrations, and responsive layouts. Keep customer-facing copy clear. Do not invent testimonials, sales counts, certifications, shipping guarantees, or real-world brand claims.
-Use FolioVale branding without internship or HNG references in customer-facing copy. The owner currently wants professional pre-launch branding. Keep concise testing information at checkout, in order details, and in receipts until actual stock and delivery operations are confirmed. No real inventory fulfillment has been arranged.
+Use FolioVale branding without internship or HNG references in customer-facing copy. The owner currently wants professional pre-launch branding. Use concise payment wording at checkout, in order details, and in receipts: Pay on delivery. No online payment is collected at checkout. Do not claim delivery or dispatch has occurred or is guaranteed. Do not describe the customer experience as testing, a demo, an assignment, or provider setup. No real inventory fulfillment has been arranged.
 
 ## Data and security
 

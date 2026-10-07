@@ -9,7 +9,7 @@ import { createGoogleAuthFlow, GoogleAuthError, MOBILE_CALLBACK } from './google
 
 function requireNativeBuild() {
   if (Platform.OS === 'web' || Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
-    throw new GoogleAuthError('Open the FolioVale Android development build to sign in. Google sign-in is not available in Expo Go or this web preview.');
+    throw new GoogleAuthError('Open the installed FolioVale app to continue with Google.');
   }
 }
 
@@ -19,7 +19,7 @@ const flow = createGoogleAuthFlow({
   authorize: async () => {
     requireNativeBuild();
     const redirectTo = makeRedirectUri({ scheme: 'foliovale', path: 'auth/callback', native: MOBILE_CALLBACK });
-    if (redirectTo !== MOBILE_CALLBACK) throw new GoogleAuthError('This build does not have the FolioVale sign-in callback. Rebuild the development app.');
+    if (redirectTo !== MOBILE_CALLBACK) throw new GoogleAuthError('Google sign-in is unavailable in this version of FolioVale. Please use the latest app.');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo, skipBrowserRedirect: true, scopes: 'email profile', queryParams: { prompt: 'select_account' } },

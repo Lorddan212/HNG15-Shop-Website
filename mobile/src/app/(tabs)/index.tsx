@@ -25,8 +25,8 @@ export default function ShopScreen() {
       ListHeaderComponent={<View style={styles.intro}>
         <Header section="The paper collection" />
         <View style={styles.hero}><Text style={common.eyebrow}>Room for your next idea</Text>
-          <Text accessibilityRole="header" style={styles.heroTitle}>A little space.{ '\n' }A world of possibility.</Text>
-          <Text style={common.body}>Notebooks, planners and thoughtful sets for the things you want to put on paper.</Text>
+          <Text accessibilityRole="header" style={styles.heroTitle}>A little space.{ '\n' }Room for your ideas.</Text>
+          <Text style={common.body}>Notebooks, planners, and sets for everyday notes and plans.</Text>
           <View style={styles.heroRule} /></View>
         <View style={common.row}><Text accessibilityRole="header" style={common.heading}>The collection</Text>
           {!shop.productsLoading && <Text style={styles.count}>{shop.products.length} pieces</Text>}</View>

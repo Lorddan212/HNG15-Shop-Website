@@ -24,17 +24,17 @@ export function Header() {
     <>
       <div className="announcement-bar">
         A little space for good ideas. {" "}
-        <span>Free delivery on orders from ₦30,000.</span>
+        <span>Delivery fee calculated at checkout · Free from ₦30,000</span>
       </div>
       <header className="site-header wrap">
         <Link className="wordmark" href="/" aria-label="FolioVale home">
           <BookOpen size={25} strokeWidth={1.4} />
-          Foliovale
+          FolioVale
         </Link>
         <nav aria-label="Main navigation">
           <Link href="/#collection">The collection</Link>
           <Link href="/#our-story" className="story-nav">
-            Our story
+            About FolioVale
           </Link>
         </nav>
         <div className="header-actions">
@@ -61,10 +61,10 @@ export function Header() {
           <button
             className="bag-button"
             onClick={() => setBagOpen(true)}
-            aria-label={"Open bag, " + count + " items"}
+            aria-label={"Open cart, " + count + " items"}
           >
             <ShoppingBag size={19} />
-            <span className="bag-word">Bag</span>
+            <span className="bag-word">Cart</span>
             <span className="bag-count">{count}</span>
           </button>
         </div>
@@ -78,7 +78,7 @@ export function Footer() {
     <footer id="site-footer" className="footer wrap">
       <div>
         <Link className="wordmark" href="/">
-          Foliovale
+          FolioVale
         </Link>
         <p>
           Notebooks, planners, and a little room to think.
@@ -106,8 +106,8 @@ export function Notice() {
     <>
       {!loading && !connected && (
         <div className="setup-notice wrap">
-          The collection is open for preview. Ordering will be available once
-          shop setup is complete.
+          We cannot load the latest collection right now. Please refresh the page
+          before placing an order.
         </div>
       )}
       {notice && (
@@ -149,12 +149,12 @@ export function Bag() {
     >
       <div className="bag-heading">
         <h2 id="bag-title">
-          Your bag {" "}
+          Your cart {" "}
           <span>({cart.items.reduce((n, i) => n + i.quantity, 0)})</span>
         </h2>
         <button
           className="icon-button"
-          aria-label="Close bag"
+          aria-label="Close cart"
           onClick={() => setBagOpen(false)}
         >
           <X />
@@ -163,8 +163,8 @@ export function Bag() {
       {cart.items.length === 0 ? (
         <div className="empty-bag">
           <ShoppingBag size={42} strokeWidth={1} />
-          <h3>A little room for something good.</h3>
-          <p>Your notebooks and planners will appear here.</p>
+          <h3>Your cart is empty.</h3>
+          <p>Add a notebook, planner, or set from the collection.</p>
           <button className="primary-button" onClick={() => setBagOpen(false)}>
             Explore the collection
           </button>
@@ -250,7 +250,7 @@ export function Bag() {
               href="/checkout"
               onClick={() => setBagOpen(false)}
             >
-              Continue to checkout <ArrowRight size={18} />
+              Proceed to checkout <ArrowRight size={18} />
             </Link>
             <p>Pay on delivery · No online payment required</p>
           </div>

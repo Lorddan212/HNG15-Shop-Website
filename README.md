@@ -171,6 +171,20 @@ Verification on 5 October 2026 for these account changes: TypeScript passed, all
 
 OAuth uses the exact registered `/auth/callback` URL. A short-lived, same-site `fv_auth_next` cookie stores only an allowlisted destination (`/`, `/checkout` or `/orders`) and is cleared by the callback. This avoids Supabase rejecting callback URLs with additional query parameters.
 
+## Pre-release technical reconciliation review
+
+SDK 57 patch alignment is complete: Expo Doctor passes 21/21, mobile TypeScript/lint and 84 tests pass, and root typecheck, 39 tests and the website production build pass (7 October 2026). React, application behavior and approved branding/EAS settings are unchanged.
+
+The read-only migration comparison and proposed history reconciliation are recorded in [MIGRATION_RECONCILIATION.md](MIGRATION_RECONCILIATION.md). All shared-cart implementation objects are verified. The five customer policies target authenticated in both committed local SQL and the live database; the prior policy-drift claim is withdrawn. No database changes or history repairs were executed. The report supersedes earlier incomplete migration-status notes while retaining their historical context.
+
+## Final pre-build checkpoint (6 October 2026)
+
+The catalogue description correction is prepared as `supabase/migrations/202610060001_catalog_description_corrections.sql` and has **not been applied**. It updates only 21 descriptions, guarded by stable product UUID, slug and previous text. The loose correction SQL has been removed.
+
+A read-only inspection found that the first four local migration timestamps differ from the four recorded remote versions. The shared-cart migration is absent from remote history, although its account-cart column and resolver function already exist. There is no local Supabase CLI configuration or link metadata. Do not assume a later `db push` will apply only the catalogue correction: reconcile migration history before any authorized push; do not replay existing schema migrations. This live inspection supersedes the older Phase 1 migration-status notes below. Full version mapping and limitations are in [CONTENT_AUDIT.md](CONTENT_AUDIT.md#read-only-migration-history-inspection).
+
+Customer checkout copy now states: “Pay on delivery. No online payment is collected at checkout.” Payment behavior is unchanged. No commit, push, APK build, deployment, database write or EAS environment change was made at this checkpoint.
+
 ## Task 3 Phase 1 API contract (pending migration)
 
 The existing endpoints and JSON representations remain in use; no mobile-specific routes or UI are added. `/api/session` returns `{user: Customer | null}` with the same fields for cookie and bearer sessions. Authenticated `/api/cart` and checkout resolve one account cart by verified Supabase user ID; guests retain the hashed `fv_bag` cookie. Browser sign-in merges guest items on the next cart read, write or checkout.
