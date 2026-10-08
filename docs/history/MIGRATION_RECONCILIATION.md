@@ -1,5 +1,8 @@
 # FolioVale migration reconciliation review
 
+> Historical development record — current project status is documented in [README.md](../../README.md).
+> This records an earlier checkpoint, not current release instructions. Migration history is now aligned and the 21 catalogue corrections are live. See the [current compliance checklist](../implementation/HNG15_LESSON3_COMPLIANCE.md) for device and release status.
+
 Read-only inspection: 6 October 2026. Project: `qolxxboicrhhrunfljbj`.
 
 **The local filename reconciliation is authorized; remote history remains unchanged.** No migration was applied, no history row repaired, no database push/dry-run run, and no catalogue SQL executed. The five filename changes below preserve the SQL bytes. Only metadata, function definitions, migration-history statements and the public product catalogue were read; no customer records were inspected.

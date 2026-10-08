@@ -1,5 +1,8 @@
 # FolioVale content and Android preview preparation
 
+> Historical development record — current project status is documented in [README.md](../../README.md).
+> This records an earlier checkpoint, not current release instructions. Migration history is now aligned and the 21 catalogue corrections are live. See the [current compliance checklist](../implementation/HNG15_LESSON3_COMPLIANCE.md) for device and release status.
+
 Date: 6 October 2026. The working tree was clean before this pass. This is a source/content and asset review, not an APK build or deployment.
 
 ## Customer-facing files reviewed

@@ -1,5 +1,5 @@
 import type { Product } from './types';
-// Website fallback catalogue; includes description corrections from migration 202610060001 (not yet applied remotely).
+// Website fallback catalogue; aligned with live description corrections in migration 20261006000100.
 export const previewProducts:Product[] = [
   {
     "id": "10000000-0000-4000-8000-000000000001",

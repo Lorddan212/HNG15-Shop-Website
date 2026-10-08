@@ -1,5 +1,8 @@
 # FolioVale Phase 3: mobile Google authentication
 
+> Historical development record — current project status is documented in [README.md](../../README.md).
+> This records an earlier checkpoint, not current release instructions. Migration history is now aligned and the 21 catalogue corrections are live. See the [current compliance checklist](../implementation/HNG15_LESSON3_COMPLIANCE.md) for device and release status.
+
 The app uses the same FolioVale Supabase project as the website: `qolxxboicrhhrunfljbj`. No provider settings, external resources, signing credentials, commits, pushes, deployments or store publications were created or changed in this phase.
 
 ## Required Supabase setting

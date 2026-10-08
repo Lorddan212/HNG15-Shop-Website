@@ -1,5 +1,8 @@
 # FolioVale Task 3 — Phase 1 handoff
 
+> Historical development record — current project status is documented in [README.md](../../README.md).
+> This records an earlier checkpoint, not current release instructions. Migration history is now aligned and the 21 catalogue corrections are live. See the [current compliance checklist](../implementation/HNG15_LESSON3_COMPLIANCE.md) for device and release status.
+
 Phase 1 prepares the existing Next.js backend for a later mobile app. No mobile UI or realtime client has been built in this phase. No commit, push or website deployment has been performed.
 
 ## Website account changes
