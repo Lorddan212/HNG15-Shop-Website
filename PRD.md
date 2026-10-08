@@ -20,7 +20,7 @@ Website guests use a database cart identified by a hashed cookie token. Mobile g
 
 Quantity changes respect stock and a maximum of 10 per product. Guest mobile merges preserve existing quantities, persist retry progress and clear guest state only after success. Concurrent same-item edits during a merge retain the documented last-write-wins limitation.
 
-Mobile Realtime notifications trigger authoritative API refetches. Foreground recovery and manual refresh reconcile missed notifications. No cart table writes or token-hash reads are allowed from mobile.
+Both clients use authenticated Realtime notifications to trigger authoritative API refetches. Browser focus/visibility, mobile foreground recovery and manual refresh reconcile missed notifications. No cart table writes or token-hash reads are allowed from mobile.
 
 Delivery is ₦1,500 below ₦30,000, free from ₦30,000 and zero for empty carts.
 
@@ -30,7 +30,7 @@ Require authentication and collect full name, phone, street address, city, state
 
 The server validates delivery data and computes prices, delivery and stock changes in one transaction. Request UUIDs provide idempotency. Orders retain customer, delivery, quantity and price snapshots. Confirmation displays the saved reference and total without claiming payment or dispatch.
 
-Website customers can view order history and hide their own entries without cancelling the order or deleting the underlying transaction. Mobile currently provides saved-order confirmation, not a full order-history screen.
+Both website and mobile customers can view My orders and hide their own entries without cancelling the order, restoring stock or deleting the underlying transaction. Mobile lists/details use the existing backend and refresh on navigation or pull-to-refresh; no fourth tab or local order database is added.
 
 Mailgun sends HTML/plain-text confirmations with bounded retries. Email failure must not invalidate the saved order. Sandbox recipient restrictions apply until a verified sending domain is configured. Email is inherited Lesson 2 functionality, not a Lesson 3 acceptance requirement.
 

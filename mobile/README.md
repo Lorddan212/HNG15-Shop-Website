@@ -22,6 +22,16 @@ Use the installed Android development build. Ordinary Expo Go and browser previe
 | `src/app/(tabs)/account.tsx` | Google sign-in, real account details and sign-out |
 | `src/app/checkout.tsx` | Delivery form and saved-order confirmation |
 | `src/app/auth/callback.tsx` | Validated native authentication completion |
+| `src/app/orders/index.tsx` | My orders, refresh and empty/error states |
+| `src/app/orders/[id].tsx` | Saved order details and confirmed removal from history |
+
+## Account and My orders
+
+Signed-out Account copy distinguishes an empty guest cart from a persisted selection. Continue with Google remains the only sign-in/account-creation action. Authenticated Account shows My orders; Shop, Cart and Account remain the only tabs.
+
+Orders use the existing GET /api/orders, GET /api/orders/:id and DELETE /api/orders/:id endpoints with the current Bearer token. The client validates the owner, detail ID, snapshot fields and deletion acknowledgement. Order data stays in memory; no local order store or order Realtime channel exists.
+
+List/detail screens refetch on navigation and pull-to-refresh. They ignore stale responses after account changes or screen blur. Details show saved items/prices, totals, delivery/contact details, optional notes, order/payment/email status and Pay on Delivery wording. Delete from history requires confirmation and returns to the refetched list. It does not cancel, restore stock or erase the transaction. The website sees the same removal on its next orders refresh/navigation. Expired sessions, missing orders and network/server failures have explicit recovery states.
 
 ## Authentication
 
@@ -47,7 +57,7 @@ On sign-in, existing account quantities are preserved and guest quantities are m
 
 `src/lib/cart-realtime.ts` subscribes to owner-filtered `UPDATE` events on `public.carts`. Signals are debounced for 250 ms, then the authenticated API supplies the current cart. Only one refetch runs at a time; a signal during that fetch schedules a follow-up.
 
-Subscription readiness and foreground return trigger reconciliation. Pull to refresh remains available. Channel errors do not replace a usable cart with a technical error. Sign-out, account changes and unmount remove the old channel and timers. Guests have no channel. The client never reads cart token hashes or writes cart tables directly.
+Subscription readiness and foreground return trigger reconciliation. Pull to refresh remains available. Channel errors do not replace a usable cart with a technical error. Sign-out, account changes and unmount remove the old channel and timers. Guests have no channel. The client never reads cart token hashes or writes cart tables directly. The website now has a matching owner-filtered subscription/refetch flow, allowing mobile cart changes to update the website automatically.
 
 ## Checkout and recovery
 
@@ -91,7 +101,7 @@ npm test
 npx expo-doctor
 ```
 
-Also run the root typecheck, tests and website production build. Test clients use controlled responses and do not create production orders. Latest command results are recorded in the [cleanup report](../docs/implementation/PROJECT_CLEANUP.md).
+Also run the root typecheck, tests and website production build. Test clients use controlled responses and do not create production orders. Latest parity results and new device checks are recorded in the [parity report](../docs/implementation/WEB_MOBILE_PARITY.md). Existing development-build device results below predate this patch.
 
 The project owner reports that the development build passed physical-phone Google sign-in, website add → mobile, quantity changes → mobile, removal → mobile and background recovery. These results are not final preview-APK QA.
 

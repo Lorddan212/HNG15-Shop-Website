@@ -118,3 +118,98 @@ for (const id of [undefined, null, '']) {
     assert.equal(requests.length, 0);
   });
 }
+
+const order = {
+  id: '20000000-0000-4000-8000-000000000001', reference: 'FV-TEST', user_id: 'customer-a',
+  email: 'test@example.com', created_at: '2026-10-08T10:00:00Z', full_name: 'Test Customer',
+  phone: '08012345678', address: 'Test fixture address', city: 'Lagos', state: 'Lagos', notes: '',
+  subtotal_kobo: 100000, shipping_kobo: 150000, total_kobo: 250000,
+  payment_method: 'pay_on_delivery', status: 'placed', email_status: 'queued',
+  items: [{ product_name: 'Notebook', product_id: 'product-a', quantity: 1, unit_price_kobo: 100000 }],
+};
+const orderCalls = client => [
+  () => client.orders('customer-a'),
+  () => client.order('customer-a', order.id),
+  () => client.deleteOrder('customer-a', order.id),
+];
+test('orders list/detail/delete use the existing contracts and current Bearer token', async () => {
+  const { client, requests } = setup((url, init) => init.method === 'DELETE'
+    ? json({ deleted: true }) : url.endsWith('/orders') ? json({ orders: [order] }) : json({ order }));
+  assert.deepEqual(await client.orders('customer-a'), [order]);
+  assert.deepEqual(await client.order('customer-a', order.id), order);
+  assert.equal(await client.deleteOrder('customer-a', order.id), undefined);
+  assert.deepEqual(requests.map(([url, init]) => [url, init.method]), [
+    [baseUrl + '/api/orders', 'GET'], [baseUrl + '/api/orders/' + order.id, 'GET'],
+    [baseUrl + '/api/orders/' + order.id, 'DELETE'],
+  ]);
+  for (const [, init] of requests) {
+    assert.equal(init.headers.Authorization, 'Bearer unit-test-token');
+    assert.equal(init.credentials, 'omit');
+    assert.equal(init.body, undefined);
+    assert.equal(init.headers.Origin, undefined);
+  }
+});
+for (const invalid of [null, { access_token: '', user: { id: 'customer-a' } }, { ...session, user: { id: 'other' } }, { access_token: 'x' }]) {
+  test('order operations reject absent or mismatched identity: ' + JSON.stringify(invalid?.user ?? null), async () => {
+    const { client, requests } = setup(json({ deleted: true }), invalid);
+    for (const call of orderCalls(client)) await assert.rejects(call, error => error.status === 401);
+    assert.equal(requests.length, 0);
+  });
+}
+for (const id of [undefined, null, '']) {
+  test('order operations cannot become anonymous for caller ' + id, async () => {
+    const { client, requests } = setup(json({ deleted: true }));
+    for (const call of [() => client.orders(id), () => client.order(id, order.id), () => client.deleteOrder(id, order.id)]) {
+      await assert.rejects(call, error => error.status === 401);
+    }
+    assert.equal(requests.length, 0);
+  });
+}
+for (const status of [401, 404, 500]) {
+  test('orders/detail/delete preserve HTTP ' + status + ' without automatic retry', async () => {
+    const { client, requests } = setup(() => json({ error: 'Order unavailable' }, status));
+    for (const call of orderCalls(client)) await assert.rejects(call, error => error.status === status && error.message === 'Order unavailable');
+    assert.equal(requests.length, 3);
+  });
+}
+test('order detail and removal encode an untrusted route segment', async () => {
+  const { client, requests } = setup(() => json({ error: 'Order not found.' }, 404));
+  await assert.rejects(() => client.order('customer-a', '../session?x=1'), error => error.status === 404);
+  await assert.rejects(() => client.deleteOrder('customer-a', '../session?x=1'), error => error.status === 404);
+  assert(requests.every(([url]) => url.endsWith('/api/orders/..%2Fsession%3Fx%3D1')));
+});
+const invalidOrders = [
+  null, { ...order, user_id: 'someone-else' }, { ...order, total_kobo: '250000' },
+  { ...order, shipping_kobo: -1 }, { ...order, created_at: 'not a date' },
+  { ...order, payment_method: 'card' }, { ...order, status: 'paid' },
+  { ...order, email_status: 'delivered' }, { ...order, address: null },
+  { ...order, items: null }, { ...order, items: [] },
+  { ...order, items: [{ ...order.items[0], quantity: 1.5 }] },
+  { ...order, items: [{ ...order.items[0], unit_price_kobo: -1 }] },
+];
+test('list/detail reject malformed fields, other owners and invalid order snapshots', async () => {
+  for (const bad of invalidOrders) {
+    const { client } = setup(url => json(url.endsWith('/orders') ? { orders: [bad] } : { order: bad }));
+    await assert.rejects(() => client.orders('customer-a'), /could not be verified/);
+    await assert.rejects(() => client.order('customer-a', order.id), /could not be verified/);
+  }
+  const { client } = setup(json({ orders: {} }));
+  await assert.rejects(() => client.orders('customer-a'), /could not be verified/);
+});
+test('empty order history is valid; detail identity and deletion acknowledgement are checked', async () => {
+  assert.deepEqual(await setup(json({ orders: [] })).client.orders('customer-a'), []);
+  await assert.rejects(() => setup(json({ order: { ...order, id: 'different-id' } })).client.order('customer-a', order.id), /could not be verified/);
+  for (const deleted of [false, null, 'true', undefined]) {
+    await assert.rejects(() => setup(json({ deleted })).client.deleteOrder('customer-a', order.id), /Removal could not be confirmed/);
+  }
+});
+test('order network failures remain retryable without leaking underlying details', async () => {
+  const { client, requests } = setup(() => { throw new Error('private transport detail'); });
+  for (const call of orderCalls(client)) await assert.rejects(call, error => error.status === 0 && /Check your connection/.test(error.message));
+  assert.equal(requests.length, 3);
+});
+test('DELETE keeps timeout and abort protection', async () => {
+  const client = createApiClient({ baseUrl, getSession: async () => session, timeoutMs: 5,
+    fetcher: (_url, { signal }) => new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted')))) });
+  await assert.rejects(() => client.deleteOrder('customer-a', order.id), /took too long/);
+});

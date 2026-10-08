@@ -26,8 +26,8 @@ The mobile counterpart lives in [mobile/](mobile/README.md). Google sign-in and 
 - Shop, Cart and Account tabs, plus checkout and authentication callback routes.
 - Persistent guest shopping with quantity/stock limits and an account-bound merge journal.
 - Google authentication, persistent sessions and local-only sign-out.
-- Authenticated checkout and saved-order confirmation.
-- Realtime notifications followed by account-cart refetch, with foreground recovery.
+- Authenticated checkout, saved-order confirmation, My orders and removal from visible history.
+- Realtime notifications followed by account-cart refetch, with foreground recovery; the website now subscribes too for automatic cart synchronization in both directions.
 
 ### Shared Web/Mobile Behavior
 
@@ -64,7 +64,7 @@ Keep the mobile callback in Supabase's allowed Redirect URLs alongside the websi
 - **Guest mobile cart:** AsyncStorage stores product IDs, quantities and merge progress. Current catalogue data supplies prices and stock.
 - **Account cart:** the verified Supabase UUID identifies one server cart across web and mobile. Guest quantities merge into existing account quantities, capped by stock and 10 per product.
 - **Mobile merge retry safety:** absolute target quantities and progress are persisted before mutations; repeated auth events do not blindly add quantities again. Concurrent edits from another device during a merge remain a last-write-wins boundary; see the mobile guide.
-- **Synchronization:** authenticated mobile subscribes to owner-filtered cart metadata updates. A Realtime signal triggers a debounced authenticated API refetch. Subscription recovery, foreground reconciliation and manual refresh recover missed events. Guest carts have no Realtime subscription.
+- **Synchronization:** authenticated website and mobile clients subscribe to owner-filtered cart metadata updates. A Realtime signal triggers a debounced authenticated API refetch. The website serializes cart reads and discards older snapshots during its own mutations; tab focus/visibility and mobile foreground reconciliation recover missed events. Guest carts have no Realtime subscription.
 
 Delivery costs ₦1,500 below ₦30,000 and is free at or above ₦30,000. Empty carts have no delivery fee.
 
@@ -72,7 +72,7 @@ Delivery costs ₦1,500 below ₦30,000 and is free at or above ₦30,000. Empty
 
 Checkout requires authentication and collects full name, phone, street address, city, state and an optional delivery note. Pay on Delivery is supported; no online payment is collected at checkout. Online payment is unavailable.
 
-The server calculates prices, delivery fees and stock changes in the checkout transaction. A retained request UUID makes retries return the same saved order. Orders retain item/price snapshots and are restricted to their owner. Mobile confirmation shows the reference and server total, then refetches the cart; it confirms clearance only after an empty response.
+The server calculates prices, delivery fees and stock changes in the checkout transaction. A retained request UUID makes retries return the same saved order. Orders retain item/price snapshots and are restricted to their owner. My orders on both clients reads the same backend history. Mobile lists/details refetch on navigation and pull-to-refresh. Delete from history removes only the visible entry, without cancellation or stock restoration; the other client sees the change on its next history refresh/navigation. Mobile confirmation shows the reference and server total, then refetches the cart; it confirms clearance only after an empty response.
 
 Mailgun failures do not erase saved orders. The configured sandbox can send only to authorized recipients until a verified sending domain is used. Mailgun acceptance does not establish inbox delivery. Email is inherited Lesson 2 functionality, not a Lesson 3 requirement.
 
@@ -154,7 +154,7 @@ npm test
 npx expo-doctor
 ```
 
-The recorded release checkpoint has 39 root tests, 84 mobile tests and Expo Doctor 21/21. These counts are checkpoint evidence, not fixed requirements; see [cleanup verification](docs/implementation/PROJECT_CLEANUP.md) for the latest run and limitations.
+The current parity checkpoint has 49 root tests, 104 mobile tests and Expo Doctor 21/21. These counts are checkpoint evidence, not fixed requirements; see [parity verification and remaining device checks](docs/implementation/WEB_MOBILE_PARITY.md). Earlier cleanup results remain historical checkpoint evidence.
 
 Optional isolated SQL verification uses `tests/database-runner.mjs` and PGlite under ignored `output/db-check`. It never loads production environment files or contacts Supabase:
 
