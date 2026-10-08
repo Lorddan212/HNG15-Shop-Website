@@ -4,6 +4,26 @@
 
 FolioVale is a notebook and planner shop with a Next.js website and an Expo Android app. Both use the same Supabase account system, catalogue, cart backend and checkout service. The catalogue has 53 products: 25 notebooks, 18 planners and 10 sets.
 
+## Download the Android App
+
+The FolioVale Android app is available as a direct APK download.
+
+**[Download FolioVale v1.0.0 for Android](https://github.com/Lorddan212/HNG15-Shop-Website/releases/download/v1.0.0/FolioVale-v1.0.0.apk)**
+
+You can also view the full release here:
+
+**[FolioVale v1.0.0 Release](https://github.com/Lorddan212/HNG15-Shop-Website/releases/tag/v1.0.0)**
+
+### Install on Android
+
+1. Download `FolioVale-v1.0.0.apk`.
+2. Open the downloaded APK on your Android device.
+3. If Android blocks the installation, allow your browser or file manager to install apps from unknown sources.
+4. Tap **Install**.
+5. Open **FolioVale** from your app launcher.
+
+> FolioVale is distributed directly for project review and testing and is not currently published on Google Play.
+
 ## Live Website
 
 <https://lorddan212-hng15-shop-website.vercel.app>
