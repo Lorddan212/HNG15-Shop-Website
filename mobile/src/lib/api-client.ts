@@ -17,13 +17,13 @@ type Options = {
 
 /** No cookie/guest-cart fallback. Only a real session can issue private requests. */
 export function createApiClient({ baseUrl, getSession, fetcher = fetch, timeoutMs = 15000 }: Options) {
-  async function request<T>(path: string, userId?: string, body?: CartChange | CheckoutRequest): Promise<T> {
+  async function request<T>(path: string, userId?: string, body?: CartChange | CheckoutRequest, method: 'GET' | 'POST' | 'DELETE' = body ? 'POST' : 'GET'): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (userId !== undefined) {
       let session: AuthSession | null;
       try { session = await getSession(); }
       catch { throw new ApiError('Your session could not be restored. Please try again.', 401); }
-      if (!session?.access_token || !userId || session.user.id !== userId) {
+      if (!session?.access_token || !userId || session.user?.id !== userId) {
         throw new ApiError('Please sign in to access your account and cart.', 401);
       }
       headers.Authorization = `Bearer ${session.access_token}`;
@@ -33,7 +33,7 @@ export function createApiClient({ baseUrl, getSession, fetcher = fetch, timeoutM
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetcher(`${baseUrl.replace(/\/+$/, '')}${path}`, {
-        method: body ? 'POST' : 'GET', headers, credentials: 'omit',
+        method, headers, credentials: 'omit',
         ...(body ? { body: JSON.stringify(body) } : {}), signal: controller.signal,
       });
       let payload: unknown;
@@ -76,10 +76,43 @@ export function createApiClient({ baseUrl, getSession, fetcher = fetch, timeoutM
       }
       return data.order;
     },
+    async orders(userId: string): Promise<Order[]> {
+      const data = await request<{ orders: unknown }>('/api/orders', userId ?? '');
+      if (!Array.isArray(data.orders) || !data.orders.every(order => validOrder(order, userId))) {
+        throw new ApiError('Your order history could not be verified. Please try again.');
+      }
+      return data.orders;
+    },
+    async order(userId: string, orderId: string): Promise<Order> {
+      const data = await request<{ order: unknown }>('/api/orders/' + encodeURIComponent(orderId), userId ?? '');
+      if (!validOrder(data.order, userId) || data.order.id !== orderId) {
+        throw new ApiError('This order could not be verified. Please try again.');
+      }
+      return data.order;
+    },
+    async deleteOrder(userId: string, orderId: string): Promise<void> {
+      const data = await request<{ deleted: unknown }>('/api/orders/' + encodeURIComponent(orderId), userId ?? '', undefined, 'DELETE');
+      if (data.deleted !== true) throw new ApiError('Removal could not be confirmed. Refresh My orders before trying again.');
+    },
     async changeCart(userId: string, change: CartChange): Promise<Cart> {
       const data = await request<{ cart: Cart }>('/api/cart', userId ?? '', change);
       if (!data.cart || !Array.isArray(data.cart.items)) throw new ApiError('Your cart could not be read. Refresh before trying again.');
       return data.cart;
     },
   };
+}
+
+function validOrder(value: unknown, userId: string): value is Order {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const order = value as Record<string, unknown>;
+  const textFields = ['id', 'reference', 'user_id', 'email', 'created_at', 'full_name', 'phone', 'address', 'city', 'state', 'notes'];
+  const amount = (n: unknown) => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
+  return textFields.every(key => typeof order[key] === 'string') && Boolean(order.id) && Boolean(order.reference)
+    && order.user_id === userId && Number.isFinite(Date.parse(order.created_at as string))
+    && ['subtotal_kobo', 'shipping_kobo', 'total_kobo'].every(key => amount(order[key]))
+    && order.payment_method === 'pay_on_delivery' && order.status === 'placed'
+    && ['queued', 'sending', 'accepted', 'failed'].includes(order.email_status as string)
+    && Array.isArray(order.items) && order.items.length > 0 && order.items.every(item =>
+      item && typeof item === 'object' && typeof item.product_name === 'string' && typeof item.product_id === 'string'
+      && amount(item.unit_price_kobo) && Number.isSafeInteger(item.quantity) && item.quantity > 0);
 }

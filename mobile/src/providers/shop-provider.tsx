@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { EMPTY_CART, type Cart, type CartChange, type Customer, type Delivery, type Product } from '@/lib/types';
 
 type ShopState = {
-  products: Product[]; cart: Cart; user: Customer | null; hasSession: boolean;
+  products: Product[]; cart: Cart; user: Customer | null; hasSession: boolean; hasGuestItems: boolean;
   loading: boolean; productsLoading: boolean; accountLoading: boolean; refreshing: boolean;
   error: string | null; productError: string | null; accountError: string | null;
   pendingProduct: string | null; signingOut: boolean; signingIn: boolean; authError: string | null;
@@ -300,7 +300,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     if (identity.current === id && alive.current) { setCheckoutResult(null); setCheckoutPending(false); }
   }, [checkoutFlow]);
 
-  return <ShopContext.Provider value={{ products, cart: accountId ? cart : guestCart(guestItems, products), user, hasSession: Boolean(accountId),
+  return <ShopContext.Provider value={{ products, cart: accountId ? cart : guestCart(guestItems, products), user, hasSession: Boolean(accountId), hasGuestItems: guestItems.some(item => item.quantity > 0),
     loading: restoring || productsLoading, productsLoading, accountLoading: restoring || accountLoading || (!guestReady && !guestError),
     refreshing, productError, accountError: accountError ?? guestError, error: productError ?? accountError ?? guestError,
     pendingProduct, signingOut, signingIn, authError, googleSignIn, finishGoogleSignIn, refresh, changeCart, signOut, checkoutDraft: accountId ? checkoutFlow.draft(accountId) : undefined, checkingOut, checkoutPending, checkoutResult, placeOrder, finishCheckout }}>{children}</ShopContext.Provider>;

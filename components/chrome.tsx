@@ -44,10 +44,7 @@ export function Header() {
               <UserRound size={18} />
               <span>My orders</span>
             </Link>
-            <button className="quiet-button account-link sign-out-button" onClick={() => void signOut()}>
-              <LogOut size={18} aria-hidden="true" />
-              <span>Sign out</span>
-            </button>
+
             </>
           ) : (
             <button
@@ -67,6 +64,12 @@ export function Header() {
             <span className="bag-word">Cart</span>
             <span className="bag-count">{count}</span>
           </button>
+          {user && (
+            <button className="quiet-button account-link sign-out-button" onClick={() => void signOut()}>
+              <LogOut size={18} aria-hidden="true" />
+              <span>Sign out</span>
+            </button>
+          )}
         </div>
       </header>
     </>
@@ -88,7 +91,7 @@ export function Footer() {
       </div>
       <div className="footer-links">
         <Link href="/#collection">Browse the collection</Link>
-        <Link href="/orders">Your orders</Link>
+        <Link href="/orders">My orders</Link>
         <Link href="/shipping">Delivery &amp; shop information</Link>
       </div>
       <div className="footer-bottom">
