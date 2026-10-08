@@ -58,7 +58,7 @@ test('totals use integer kobo and delivery threshold',()=>{
  const cart=priceCart([{product_id:previewProducts[0].id,product:previewProducts[0],quantity:2}]);assert.equal(cart.total_kobo,1850000);
 });
 test('OAuth next destinations cannot redirect outside the shop',()=>{assert.equal(safeNext('https://attacker.example'),'/');assert.equal(safeNext('//attacker.example'),'/');assert.equal(safeNext('/checkout'),'/checkout');});
-test('confirmation text uses saved totals and clearly states no payment was taken',()=>{const text=confirmationText(order);assert.match(text,/FV-TEST/);assert.match(text,/No online payment was taken/);assert.match(text,/no shipment is arranged/);});
+test('confirmation text uses saved totals and clearly states no payment was taken',()=>{const text=confirmationText(order);assert.match(text,/FV-TEST/);assert.match(text,/No online payment was taken/);assert.match(text,/Pay on delivery\. No online payment is collected at checkout\./);});
 test('Mailgun sends to the verified order email and handles provider rejection',async()=>{
  const previous={key:process.env.MAILGUN_API_KEY,domain:process.env.MAILGUN_DOMAIN,from:process.env.MAILGUN_FROM,base:process.env.MAILGUN_API_BASE_URL};
  process.env.MAILGUN_API_KEY='test-only';process.env.MAILGUN_DOMAIN='example.test';process.env.MAILGUN_FROM='FolioVale <orders@example.test>';process.env.MAILGUN_API_BASE_URL='https://api.mailgun.net';

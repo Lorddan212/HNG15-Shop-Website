@@ -33,7 +33,7 @@ export function confirmationText(order: Order) {
     order.address,
     order.city + ", " + order.state,
     "",
-    "This order was placed during checkout testing. No payment will be collected and no shipment is arranged.",
+    "Pay on delivery. No online payment is collected at checkout.",
   ].join("\n");
 }
 
@@ -121,7 +121,7 @@ export function confirmationHtml(order: Order) {
                 <div
                   style="font-family:Georgia,'Times New Roman',serif;font-size:27px;line-height:1.25;color:#0b2b4c;margin-bottom:14px;"
                 >
-                  Good things are on the page.
+                  Thank you for your order.
                 </div>
 
                 <p style="margin:0 0 8px;font-size:15px;line-height:1.7;">
@@ -129,7 +129,7 @@ export function confirmationHtml(order: Order) {
                 </p>
 
                 <p style="margin:0;font-size:15px;line-height:1.7;">
-                  Your order has been recorded successfully.
+                  Your order has been recorded.
                 </p>
               </td>
             </tr>
@@ -247,7 +247,7 @@ export function confirmationHtml(order: Order) {
             <tr>
               <td style="padding:22px 34px 30px;border-top:1px solid #eee8df;">
                 <p style="margin:0 0 10px;font-size:12px;line-height:1.6;color:#8a8175;">
-                  This order was placed during checkout testing. No payment will be collected and no shipment is arranged.
+                  Pay on delivery. No online payment is collected at checkout.
                 </p>
 
                 <p style="margin:0;font-size:12px;color:#8a8175;">

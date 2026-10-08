@@ -23,13 +23,13 @@ export function ShopProvider({children}:{children:ReactNode}){
  useEffect(()=>{void refresh();if(new URLSearchParams(window.location.search).has('auth_error'))setNotice('Google sign-in did not finish. Please try again.');},[refresh]);
  async function change(id:string,quantity:number,operation:'add'|'set'='set'){
  if(busy)return;setBusy(true);setNotice('');
- try{const data=await request<{cart:Cart}>('/api/cart',{product_id:id,quantity,operation});setCart(data.cart);if(operation==='add'){setBagOpen(true);setNotice('Added to your bag.');}}
- catch(e){setNotice(e instanceof Error?e.message:'Your bag could not be updated.');}finally{setBusy(false);}
+ try{const data=await request<{cart:Cart}>('/api/cart',{product_id:id,quantity,operation});setCart(data.cart);if(operation==='add'){setBagOpen(true);setNotice('Added to your cart.');}}
+ catch(e){setNotice(e instanceof Error?e.message:'Your cart could not be updated.');}finally{setBusy(false);}
  }
  async function signIn(next='/'){setNotice('');try{
  // This short-lived cookie holds only an allowlisted page path, never credentials.
  document.cookie='fv_auth_next='+safeNext(next)+'; Path=/auth/callback; Max-Age=600; SameSite=Lax'+(window.location.protocol==='https:'?'; Secure':'');
- const{error}=await browserClient().auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/auth/callback',scopes:'email profile'}});if(error)throw error;}catch{setNotice('Google sign-in is not ready yet. Please try again later.');}}
+ const{error}=await browserClient().auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/auth/callback',scopes:'email profile'}});if(error)throw error;}catch{setNotice('Google sign-in is unavailable right now. Please try again.');}}
  async function signOut(){try{const{error}=await browserClient().auth.signOut();if(error)throw error;setUser(null);window.location.assign('/');}catch{setNotice('Sign-out did not finish. Try again.');}}
  return <Context.Provider value={{products,cart,user,loading,connected,busy,notice,bagOpen,setBagOpen,setNotice,change,refresh,signIn,signOut}}>{children}</Context.Provider>;
 }

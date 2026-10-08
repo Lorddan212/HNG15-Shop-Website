@@ -1,263 +1,58 @@
-# FolioVale — Product Requirements Document
+# FolioVale — Product Requirements
 
-## 1. Product Overview
+## Product and scope
 
-FolioVale is a responsive e-commerce website for notebooks, planners, and stationery sets.
+FolioVale provides a notebook/planner storefront on the web and Android. Customers browse one catalogue, build a cart, use Google sign-in and place Pay on Delivery orders through a shared backend. The mobile counterpart satisfies the Lesson 3 individual implementation requirements; the team's Zedu work is a separate deliverable.
 
-The project demonstrates a complete online shop flow with product browsing, persistent cart management, Google authentication, checkout, database-backed orders, order history, and Mailgun confirmation emails.
+## Catalogue and browsing
 
-The primary goal is to satisfy the HNG 15 Lesson 2 individual shop requirements while maintaining a polished and usable customer experience.
+The catalogue contains 53 products: 25 notebooks, 18 planners and 10 sets. Product identifiers, prices, stock, descriptions and specifications come from the existing data. The website supports search, categories, sorting, pagination and detail pages; mobile provides catalogue browsing and cart controls. Preserve the website fallback catalogue for resilience.
 
----
+Do not invent customer counts, ratings, reviews, provenance, certifications, guarantees or delivery speeds. Existing physical specifications still require independent business validation before fulfilment.
 
-## 2. Core Objectives
+## Identity and account
 
-FolioVale must allow users to:
+Use the same Supabase project and Google provider on both platforms. Mobile validates its native PKCE callback and persists the real session. Website cookie authentication and mobile Bearer authentication resolve the same verified user UUID. Mobile sign-out is local to its session. Protected orders remain owner-scoped.
 
-- Browse and search the product collection.
-- Add multiple products to a shopping bag.
-- Increase, reduce, or remove product quantities.
-- Continue shopping before checkout.
-- Sign in securely with Google.
-- Enter delivery information.
-- Place an order using pay on delivery.
-- Receive an email confirmation after checkout.
-- View previously placed orders after signing out and signing back in.
-- Retain order data through database persistence.
+## Carts
 
----
+Website guests use a database cart identified by a hashed cookie token. Mobile guests use AsyncStorage product/quantity records, priced from the current catalogue. Account carts persist on the server and are shared by both clients.
 
-## 3. Product Catalogue
+Quantity changes respect stock and a maximum of 10 per product. Guest mobile merges preserve existing quantities, persist retry progress and clear guest state only after success. Concurrent same-item edits during a merge retain the documented last-write-wins limitation.
 
-The catalogue contains 53 sample products:
+Mobile Realtime notifications trigger authoritative API refetches. Foreground recovery and manual refresh reconcile missed notifications. No cart table writes or token-hash reads are allowed from mobile.
 
-- 25 Notebooks
-- 18 Planners
-- 10 Sets
+Delivery is ₦1,500 below ₦30,000, free from ₦30,000 and zero for empty carts.
 
-Users can:
+## Checkout and orders
 
-- Browse all products.
-- Filter by category.
-- Search products.
-- Sort products.
-- View product details.
-- Add available products to the bag.
+Require authentication and collect full name, phone, street address, city, state and optional delivery note. Support Pay on Delivery only. No online payment is collected; online payment remains unavailable.
 
----
+The server validates delivery data and computes prices, delivery and stock changes in one transaction. Request UUIDs provide idempotency. Orders retain customer, delivery, quantity and price snapshots. Confirmation displays the saved reference and total without claiming payment or dispatch.
 
-## 4. Shopping Bag
+Website customers can view order history and hide their own entries without cancelling the order or deleting the underlying transaction. Mobile currently provides saved-order confirmation, not a full order-history screen.
 
-The shopping bag must support:
+Mailgun sends HTML/plain-text confirmations with bounded retries. Email failure must not invalidate the saved order. Sandbox recipient restrictions apply until a verified sending domain is configured. Email is inherited Lesson 2 functionality, not a Lesson 3 acceptance requirement.
 
-- Multiple different products.
-- Quantity changes.
-- Product removal.
-- Server-backed persistence.
-- Subtotal calculation.
-- Delivery fee calculation.
-- Total calculation.
-- Returning to the collection to add more products before checkout.
+## Technology and security
 
-Delivery costs ₦1,500 for orders below ₦30,000 and is free for orders of ₦30,000 or more.
+- Next.js 16, React 19, TypeScript and CSS for the website.
+- Expo SDK 57, React Native and Expo Router for mobile.
+- Existing Next.js routes and Supabase PostgreSQL/Auth for both clients.
+- Verify protected identities server-side; invalid supplied Bearer tokens cannot fall back to cookies.
+- Preserve browser origin checks and guest-cookie ownership.
+- Keep server credentials private; public mobile variables contain no server secrets.
+- Preserve RLS, stock locks, checkout idempotency and order snapshots.
+- Use Realtime only as a signal; the API remains the cart source of truth.
 
----
+## Acceptance and release
 
-## 5. Authentication
+Automated checks cover authentication, ownership, cart/merge behavior, checkout retries and Realtime reconciliation. Root typecheck/tests/build and mobile typecheck/lint/tests/Expo Doctor must pass.
 
-Authentication is provided through:
+The owner reports development-build physical-phone authentication, cart updates/removal and background recovery passed. Final preview-APK validation and submission remain pending. The latest official form requires an accessible APK download link, the repository containing the mobile source after the final branch is pushed, and a single continuous video demonstrating mobile and website login/cart synchronization. Task Two requires a team/project PR link and a submission screenshot/picture; completion is unverified. The running build must finish before its artifact can be assessed.
 
-- Google OAuth
-- Supabase Authentication
-- Google Cloud Console
+The [root README](README.md) records current deployment, migration and verification status. The [Lesson 3 compliance matrix](docs/implementation/HNG15_LESSON3_COMPLIANCE.md) separates required submission evidence, optional enhancements and pending team work.
 
-Authenticated users must be able to:
+## Outside current scope
 
-- Sign in.
-- Sign out.
-- Place orders.
-- View only their own orders.
-- Sign out, return later, sign in again, and still see previous orders.
-
----
-
-## 6. Checkout
-
-Checkout collects:
-
-- Full name
-- Phone number
-- Street address
-- City
-- State
-- Optional delivery note
-
-The currently active payment method is:
-
-- Pay on delivery
-
-Online payment may be displayed as a future option but is not currently enabled.
-
-The server must calculate prices and totals rather than trusting values supplied by the browser.
-
----
-
-## 7. Order Persistence
-
-Orders are stored in Supabase PostgreSQL.
-
-Each saved order includes:
-
-- Authenticated customer ID
-- Customer email
-- Delivery information
-- Product snapshots
-- Quantities
-- Item prices
-- Subtotal
-- Delivery fee
-- Total
-- Payment method
-- Order status
-- Email status
-- Order reference
-- Creation date
-
-Orders must remain available after logout, browser closure, and later sign-in.
-
----
-
-## 8. Confirmation Email
-
-Mailgun is used to send order confirmation emails after successful checkout.
-
-The confirmation email should contain:
-
-- FolioVale branding
-- Customer name
-- Order reference
-- Ordered products
-- Quantities
-- Item prices
-- Delivery fee
-- Total
-- Payment method
-- Delivery address
-
-Both HTML and plain-text email formats should be provided.
-
-A failure to send email must not delete or invalidate an already saved order.
-
-The current Mailgun sandbox environment can send only to authorized recipients until a custom sending domain is configured.
-
----
-
-## 9. Technology Stack
-
-- Next.js
-- React
-- TypeScript
-- CSS
-- Supabase PostgreSQL
-- Supabase Authentication
-- Google OAuth
-- Mailgun HTTP API
-- Git and GitHub
-- Vercel for deployment
-
----
-
-## 10. Security Requirements
-
-The application must:
-
-- Keep private API keys server-side.
-- Never commit `.env.local`.
-- Validate authenticated users on protected routes.
-- Restrict users to their own orders.
-- Calculate prices on the server.
-- Validate checkout input.
-- Use database row-level security where appropriate.
-- Protect cart and checkout mutations against invalid requests.
-- Preserve order integrity if email delivery fails.
-
----
-
-## 11. Testing Requirements
-
-Before submission:
-
-- TypeScript checks must pass.
-- Automated tests must pass.
-- Production build must succeed.
-- Google sign-in must work.
-- Cart operations must work.
-- Multiple products must be supported.
-- Checkout must create a persistent order.
-- Confirmation email must be received.
-- Order history must survive logout and re-login.
-- Production deployment must be tested end-to-end.
-
-```sh
-npm run typecheck
-npm test
-npm run build
-```
-
----
-
-## 12. Deployment
-
-  The application is deployed to Vercel at:
-
-<https://lorddan212-hng15-shop-website.vercel.app>
-
-  Production deployment must include:
-
-- Supabase environment variables.
-- Mailgun environment variables.
-- Production Google OAuth configuration.
-- Production Supabase redirect URLs.
-- Successful end-to-end testing on the deployed website.
-
----
-
-## 13. Out of Scope
-
-The following are not required for the current version:
-
-- Real inventory fulfilment.
-- Real shipping operations.
-- Admin dashboard.
-- Customer account management beyond order history.
-- Live card or bank payments.
-- Team Zedu functionality.
-
----
-
-## 14. Success Criteria
-
-FolioVale is considered complete when a user can:
-
-1. Visit the deployed shop.
-2. Browse the collection.
-3. Add one or more products to the bag.
-4. Modify or remove bag items.
-5. Sign in with Google.
-6. Complete checkout.
-7. Have the order stored in Supabase.
-8. Receive a Mailgun confirmation email.
-9. View the saved order in order history.
-10. Sign out and later sign back in and still see the previous order.
-
----
-
-## 15. Task 3 Phase 1: shared account backend
-
-Preserve the existing web shop and API paths while preparing for a later Expo mobile app. The same verified Supabase account must resolve one account cart from both cookie-authenticated web and bearer-authenticated mobile requests. Guest cookies continue working; sign-in merges guest items with account items up to stock and the per-product limit of 10. Out-of-stock or inactive items are excluded during a merge.
-
-Cart tokens stay private. Owners may read only their own cart metadata/items, and only the server may mutate them. Invalid bearer credentials return 401; browser mutations retain origin checks. Checkout and order ownership semantics remain intact.
-
-The new migration prepares cart metadata for Realtime notifications and touches updated_at for item removal and checkout. Client subscriptions and mobile UI are out of scope for this phase. Changes remain local until the migration and a separate deployment are authorized.
-
-Website account improvements in this release: general sign-in returns home, the shared header exposes Sign out, and customers can confirm deletion from their own visible order history while the original transaction record remains intact.
+Online payment gateways, store publication, admin tooling, new backends and changes to physical delivery operations are outside this product version. No software result establishes real inventory fulfilment, shipment or delivery guarantees.

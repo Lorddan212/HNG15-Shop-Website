@@ -41,3 +41,13 @@ Docs: <https://docs.expo.dev/eas/index.md>
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: <https://docs.expo.dev/versions/latest/index.md>
+
+## FolioVale invariants
+
+- Read the root `AGENTS.md` and current `README.md`; phase history is archived under `../docs/history/`.
+- Keep the existing API and Supabase project, native PKCE callback, AsyncStorage persistence and local-only sign-out.
+- Preserve guest-cart merge journaling, stock/quantity caps and checkout request UUID reuse.
+- Realtime is implemented: owner-filtered cart metadata signals trigger authenticated API refetch. Preserve debounce, channel cleanup and foreground reconciliation.
+- Keep Pay on Delivery as the only active method; no online payment or invented fulfilment claims.
+- Preserve approved launcher assets, native scheme/package and EAS profiles. Build/cloud actions require explicit authorization.
+- Run `npx tsc --noEmit`, `npm run lint`, `npm test` and `npx expo-doctor`; separate automated results from physical-device evidence.

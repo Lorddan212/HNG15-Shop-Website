@@ -8,3 +8,10 @@ coverage/
 npm-debug.log*
 output/
 .DS_Store
+supabase/.temp/
+
+# Local Android build copies (not source assets)
+/*.apk
+/*.aab
+/mobile/*.apk
+/mobile/*.aab

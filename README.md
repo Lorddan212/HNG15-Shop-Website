@@ -1,108 +1,143 @@
 # FolioVale
 
-A notebook and planner shop presented under the FolioVale brand. FolioVale combines a blue-and-paper storefront with database-backed bags, Google sign-in, pay-on-delivery checkout, order history, and Mailgun confirmation emails.
+## Overview
 
-## What the shop does
+FolioVale is a notebook and planner shop with a Next.js website and an Expo Android app. Both use the same Supabase account system, catalogue, cart backend and checkout service. The catalogue has 53 products: 25 notebooks, 18 planners and 10 sets.
 
-- Browse 53 pieces: 25 notebooks, 18 planners, and 10 sets.
-- Filter by category, search products, sort by price/name, paginate, and view product details.
-- Add, update, and remove bag items.
-- Keep bags in Supabase across page refreshes using a secure browser cookie.
-- Sign in with Google through Supabase Auth and Google Cloud Console.
-- Place a test order with delivery details and pay-on-delivery status.
-- Save orders, item-price snapshots, stock changes, customer details, and email status.
-- View only the signed-in customer's order history.
-- Send confirmation emails with bounded retries if email delivery is temporarily unavailable.
+## Live Website
 
-FolioVale currently uses professional pre-launch branding. Checkout is in testing: payments and shipments are not active. Catalogue illustrations and specifications are sample product content and must be checked against actual stock before launch.
+<https://lorddan212-hng15-shop-website.vercel.app>
 
-## Stack
+## Lesson 3 Mobile App
 
-Next.js App Router, React, TypeScript, plain CSS, Supabase PostgreSQL/Auth, and Mailgun's HTTP API. Pay on delivery is the active payment method. Online payment is shown as a planned option but is not enabled, because payment gateway integration is optional for this task.
+The mobile counterpart lives in [mobile/](mobile/README.md). Google sign-in and website-to-mobile cart changes have passed physical-phone checks in the development build, as reported by the project owner. The preview APK build was running at this cleanup checkpoint; its completion and final physical-device validation are not yet confirmed. The APK download link, final-branch repository link, single continuous demonstration video and submission remain pending.
 
-## Run locally
+## Features
 
-Use a maintained Node.js version supported by the installed Next.js release (Node.js 22 or newer is recommended for this project).
+### Website
 
-```sh
-npm install
-npm run dev
+- Browse, search, filter, sort and paginate the collection; open product details.
+- Build a guest cart, sign in with Google, and use an account cart.
+- Enter delivery details and place Pay on Delivery orders.
+- View orders, retry eligible confirmation emails and hide an order from personal history. Hiding does not cancel an order or delete the transaction record.
+
+### Mobile
+
+- Shop, Cart and Account tabs, plus checkout and authentication callback routes.
+- Persistent guest shopping with quantity/stock limits and an account-bound merge journal.
+- Google authentication, persistent sessions and local-only sign-out.
+- Authenticated checkout and saved-order confirmation.
+- Realtime notifications followed by account-cart refetch, with foreground recovery.
+
+### Shared Web/Mobile Behavior
+
+The same Google identity in the same Supabase project resolves the same user UUID and account cart. Catalogue, stock, pricing and order persistence use the existing backend. Pay on Delivery is the only supported payment method.
+
+## Architecture
+
+| Layer | Implementation |
+| --- | --- |
+| Website | Next.js 16 App Router, React 19, TypeScript, CSS |
+| Mobile | Expo SDK 57, React Native 0.86, Expo Router, TypeScript |
+| Backend | Existing Next.js route handlers under `app/api/` |
+| Data and identity | Supabase PostgreSQL, RLS and Google OAuth |
+| Cart notifications | Supabase Realtime; API refetch supplies authoritative cart data |
+| Confirmation email | Mailgun, retained from Lesson 2 |
+
+Mobile reuses the production website API; there is no second backend or separate mobile user store. Protected mobile requests send the current Supabase Bearer token. The server verifies identity; invalid supplied Bearer credentials never fall back to browser cookies.
+
+## Authentication
+
+Website authentication uses Supabase cookie sessions and the existing `/auth/callback` route. Native Google sign-in opens the system browser through Expo WebBrowser and uses Supabase S256 PKCE. The exact mobile callback is:
+
+```text
+foliovale://auth/callback
 ```
 
-Open [http://localhost:3002](http://localhost:3002). The development server binds to the local machine only.
+The SDK exchanges the validated one-time code with its stored verifier and persists the real session in AsyncStorage. Callback identity fields are never trusted. Mobile sign-out uses `supabase.auth.signOut({ scope: 'local' })`, so it does not intentionally revoke the website session.
 
-Copy `.env.example` to `.env.local` for a new checkout. The current working copy already has `.env.local` with the public Supabase connection values. Enter private values in that file; never paste them into chat or commit them.
+Keep the mobile callback in Supabase's allowed Redirect URLs alongside the website callbacks. Google's existing Web OAuth client returns to `https://qolxxboicrhhrunfljbj.supabase.co/auth/v1/callback`; the mobile scheme is not a Google Cloud Web-client redirect. See the [mobile guide](mobile/README.md#authentication).
+
+## Cart Architecture
+
+- **Guest website cart:** a random HttpOnly cookie identifies a database cart; only its token hash is stored.
+- **Guest mobile cart:** AsyncStorage stores product IDs, quantities and merge progress. Current catalogue data supplies prices and stock.
+- **Account cart:** the verified Supabase UUID identifies one server cart across web and mobile. Guest quantities merge into existing account quantities, capped by stock and 10 per product.
+- **Mobile merge retry safety:** absolute target quantities and progress are persisted before mutations; repeated auth events do not blindly add quantities again. Concurrent edits from another device during a merge remain a last-write-wins boundary; see the mobile guide.
+- **Synchronization:** authenticated mobile subscribes to owner-filtered cart metadata updates. A Realtime signal triggers a debounced authenticated API refetch. Subscription recovery, foreground reconciliation and manual refresh recover missed events. Guest carts have no Realtime subscription.
+
+Delivery costs ₦1,500 below ₦30,000 and is free at or above ₦30,000. Empty carts have no delivery fee.
+
+## Checkout and Orders
+
+Checkout requires authentication and collects full name, phone, street address, city, state and an optional delivery note. Pay on Delivery is supported; no online payment is collected at checkout. Online payment is unavailable.
+
+The server calculates prices, delivery fees and stock changes in the checkout transaction. A retained request UUID makes retries return the same saved order. Orders retain item/price snapshots and are restricted to their owner. Mobile confirmation shows the reference and server total, then refetches the cart; it confirms clearance only after an empty response.
+
+Mailgun failures do not erase saved orders. The configured sandbox can send only to authorized recipients until a verified sending domain is used. Mailgun acceptance does not establish inbox delivery. Email is inherited Lesson 2 functionality, not a Lesson 3 requirement.
+
+The software does not establish physical fulfilment capability: delivery operations and supplier/stock specifications need business verification before commercial fulfilment. Customer copy does not promise dispatch, payment receipt or delivery dates.
+
+## Catalogue
+
+The database supplies 53 products: 25 notebooks, 18 planners and 10 sets. `lib/catalog.ts` is the website's fallback catalogue. Product IDs/slugs remain stable. All 21 corrected descriptions match the live database, verified by a read-only comparison. Existing illustrations/specifications do not constitute independent verification of physical merchandise.
+
+## Environment Variables
+
+Never commit private environment files. Examples contain blank placeholders, except public service URLs. Public variables are bundled into clients; they must never contain private credentials.
+
+### Root web environment
+
+Copy `.env.example` to `.env.local` only for a new checkout; preserve an existing file.
 
 | Variable | Purpose |
 | --- | --- |
-| NEXT_PUBLIC_SUPABASE_URL | Supabase project URL |
+| NEXT_PUBLIC_SUPABASE_URL | Shared Supabase project URL |
 | NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | Public client key |
-| SUPABASE_SECRET_KEY | Server-only Supabase secret or legacy service-role key |
-| MAILGUN_API_KEY | Server-only Mailgun sending key |
-| MAILGUN_DOMAIN | Verified sending domain or Mailgun sandbox domain |
-| MAILGUN_FROM | Sender, e.g. FolioVale <orders@your-sending-domain> |
-| MAILGUN_API_BASE_URL | <https://api.mailgun.net> or <https://api.eu.mailgun.net> |
+| SUPABASE_SECRET_KEY | Server-only Supabase secret/service-role credential |
+| MAILGUN_API_KEY | Server-only email sending credential |
+| MAILGUN_DOMAIN | Sending domain or sandbox domain |
+| MAILGUN_FROM | Sender configured for that domain |
+| MAILGUN_API_BASE_URL | Mailgun US or EU API base URL |
 
-Restart the development server after changing environment variables if changes are not picked up automatically. A catalogue preview is shown while the database connection is incomplete; ordering stays disabled and no success is simulated.
+### Mobile public environment
 
-## Supabase
+Copy `mobile/.env.example` to `mobile/.env` only if absent.
 
-Project: [FolioVale Shop](https://supabase.com/dashboard/project/qolxxboicrhhrunfljbj), in the connected Daniel Jegbefumhen organization, region `eu-west-1`. Supabase reported a project cost of $0/month at creation.
+| Variable | Purpose |
+| --- | --- |
+| EXPO_PUBLIC_API_BASE_URL | Reachable website API base URL |
+| EXPO_PUBLIC_SUPABASE_URL | Same Supabase project as the website |
+| EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY | Same project's public client key |
 
-The original schema/catalogue migrations and `202610050001_order_history_deletion.sql` have been applied to this project. The Task 3 migration `202610050002_shared_account_carts.sql` is prepared but NOT applied. Do not rerun earlier migrations on this database. Apply all migrations in filename order only when setting up a new empty project.
+Cloud builds use their selected EAS environment. No private web keys belong in mobile configuration. Restart Metro after local environment changes; bundled configuration changes require a new appropriate release artifact.
 
-Tables: `products`, `carts`, `cart_items`, `profiles`, `orders`, and `order_items`.
+## Local Development
 
-All tables have RLS enabled. After the Task 3 migration, authenticated users may read only their own account-cart metadata and items. Cart token hashes remain server-only; guests have no direct database access. Every cart write continues through the trusted backend. Other browser reads remain limited to active products and the authenticated user's own profile/orders. Mutation functions can only be called by the server role.
+Use a Node.js release supported by both installed frameworks and the committed lockfiles.
 
-## Google sign-in setup
+### Website
 
-1. Select the existing [FolioVale Shop Google Cloud project](https://console.cloud.google.com/auth/overview?project=deductive-mix-510317-v1). Project ID: `deductive-mix-510317-v1`. Its OAuth app branding has been created.
-2. Open Google Auth Platform. Configure Branding, Audience, and the basic email/profile permissions. During testing, add the Google accounts that will sign in as test users.
-3. Under Clients, create an OAuth client of type **Web application**.
-4. Add `http://localhost:3002` as an authorized JavaScript origin for local development. Add the final HTTPS shop origin when deployed.
-5. Add this **authorized redirect URI**:
-   `https://qolxxboicrhhrunfljbj.supabase.co/auth/v1/callback`
-6. In [Supabase Auth providers](https://supabase.com/dashboard/project/qolxxboicrhhrunfljbj/auth/providers), enable Google and enter the Google client ID and client secret there. The Google secret belongs in Supabase, not in public app code.
-7. In Supabase Authentication → URL Configuration, set the local Site URL to `http://localhost:3002` and add `http://localhost:3002/auth/callback` to allowed redirect URLs. If using `127.0.0.1`, add that exact callback origin too.
-8. After deployment, update Site URL to the production URL and add the production `/auth/callback` URL.
-9. For this project in Supabase Authentication → URL Configuration, set the Site URL to:
-   `https://lorddan212-hng15-shop-website.vercel.app`
+```sh
+npm ci --include=dev
+npm run dev
+```
 
-   Keep the local development callback URLs in the allowed Redirect URLs:
-   - `http://localhost:3002/auth/callback`
-   - `http://127.0.0.1:3002/auth/callback`
-   - `https://lorddan212-hng15-shop-website.vercel.app/auth/callback`
+Open <http://localhost:3002>. The development script binds to 127.0.0.1; a physical phone cannot reach that address on your computer. Mobile normally uses the production API.
 
-10. In Google Cloud, keep the Supabase OAuth callback as the authorized redirect URI:
-   `https://qolxxboicrhhrunfljbj.supabase.co/auth/v1/callback`
+### Mobile
 
-   Add the production FolioVale URL as an authorized JavaScript origin where applicable.
-11. Test the shop's **Continue with Google** button. Confirm the signed-in account appears and can view its orders.
+```sh
+cd mobile
+npm ci --include=dev
+npx expo start --dev-client
+```
 
-Reference: [Supabase Google authentication guide](https://supabase.com/docs/guides/auth/social-login/auth-google).
+Open the installed development build. Custom-scheme Google authentication requires a native build; ordinary Expo Go is not the authentication target. Native setup and routes are in [mobile/README.md](mobile/README.md).
 
-## Mailgun setup
+## Testing
 
-1. In Mailgun, open Sending → Domains and select a sending domain.
-2. For a pre-launch email test, use the sandbox domain and add/verify each test recipient. A sandbox cannot send to arbitrary unverified addresses.
-3. For unrestricted customer recipients, use your own domain and complete Mailgun's DNS verification.
-4. Save the sending key, domain, sender, and correct US/EU API endpoint in `.env.local`.
-5. Place a test order using a Google account whose email is authorized for the sandbox. Confirm the message arrives in its inbox.
-
-Emails use the authenticated account email, not an arbitrary client-supplied recipient. Order status survives email failures. `accepted` means Mailgun accepted the message, not that an inbox received it. Retry requests are limited to three attempts per order, at least one minute apart. Ambiguous `sending` states require manual investigation rather than an automatic resend.
-
-Reference: [Mailgun send-email API](https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/messages/post-v3--domain-name--messages).
-
-## Checkout rules
-
-All prices use integer kobo. Delivery is ₦1,500 below ₦30,000 and free from ₦30,000. Quantities are limited to 10 of each product and available stock.
-
-Checkout locks the relevant bag and stock rows, calculates totals from stored prices, records the order/items/profile, decrements stock, and clears the bag in one transaction. The customer ID and email come from verified authentication. Duplicate requests with the same request ID return the existing order. New orders are limited to five per account in a ten-minute window.
-
-The guest bag follows its browser cookie. With Task 3 Phase 1 and its migration, sign-in merges that guest bag into one account bag shared across authenticated devices. Reload or refetch to see changes on another device; realtime subscriptions come later. Order history follows the signed-in account. Recent history shows up to 50 orders.
-
-## Verification
+From the root:
 
 ```sh
 npm run typecheck
@@ -110,86 +145,98 @@ npm test
 npm run build
 ```
 
-The test runner uses TypeScript compilation and Node's built-in test runner. It covers API validation, authentication/ownership, same-origin requests, totals, failure handling, and the Mailgun request shape. Database tests are run separately in a transaction that rolls back test records.
+From `mobile/`:
 
-Verified locally on 1 October 2026:
+```sh
+npx tsc --noEmit
+npm run lint
+npm test
+npx expo-doctor
+```
 
-- Production build completed, including TypeScript checks; all 22 automated tests passed.
-- Browser review covered the desktop storefront, mobile catalogue, category filters, pagination, and empty search results. The mobile hero typography was refined after review.
-- Live HTTP checks on both localhost and 127.0.0.1 verified the 53-product catalogue, adding two bag items, persistence across requests, removal, and rejection of foreign-origin requests.
-- Database transaction tests verified order totals, stock, idempotency, profile persistence, bag clearing, and email claims with rollback.
+The recorded release checkpoint has 39 root tests, 84 mobile tests and Expo Doctor 21/21. These counts are checkpoint evidence, not fixed requirements; see [cleanup verification](docs/implementation/PROJECT_CLEANUP.md) for the latest run and limitations.
 
-The request-origin guard compares the browser origin with the incoming Host and request protocol, because Next.js can normalize its internal request URL to localhost. Foreign origins remain blocked.
-
-Google sign-in is connected: the Google provider is enabled, the local Site URL is <http://localhost:3002>, and callback URLs for localhost:3002 and 127.0.0.1:3002 are saved. On 2 October 2026 the owner confirmed successful Google sign-in and the My orders link.
-
-Mailgun is connected using the US API endpoint and a verified sandbox recipient. On 2 October 2026, an end-to-end checkout test successfully created an order, Mailgun accepted and delivered the confirmation message, and the confirmation email was received in Gmail. Because the project currently uses a Mailgun sandbox domain, confirmation emails can only be delivered to authorized sandbox recipients until a custom sending domain is configured.
-
-Production verification on 2 October 2026:
-
-- FolioVale was successfully deployed to Vercel.
-- Google OAuth was verified on the production domain.
-- Multiple products could be added, updated, removed, and carried through checkout.
-- Checkout successfully persisted orders in Supabase.
-- Order history remained available after sign-out and later sign-in.
-- Mailgun confirmation email delivery was verified using an authorized sandbox recipient.
-
-## Deploy
-
-The project owner handles deployment. For Vercel, import the private GitHub repository using the Next.js preset, configure all environment variables, and deploy. Never upload `.env.local`. Configure the final Google/Supabase redirect URLs before testing authentication on the live site.
-
-The project is deployed from the `main` branch of the GitHub repository to Vercel at:
-<https://lorddan212-hng15-shop-website.vercel.app>
-
-## Files
-
-- `app/`: storefront routes, checkout, orders, API endpoints, and styles.
-- `components/`: interface components and shared shop state.
-- `lib/`: validation, commerce logic, Supabase clients, repository, and email.
-- `supabase/migrations/`: schema and catalogue.
-- `tests/`: API and business tests.
-- `AGENTS.md`: rules for future AI-assisted work.
-- `public/favicon.svg`: shop icon.
-
-## Development notes
-
-FolioVale was built with Codex assistance. The app itself does not call an AI service. The name is a project brand; no trademark registration or exclusivity is claimed.
-
-## Editorial image
-
-The built-in image-generation tool created `public/images/hero-editorial.png` for the storefront. Prompt: a photorealistic luxury stationery still life with three navy, dusty-blue, and parchment clothbound notebooks, restrained brass foil, a fountain pen, blue stone, soft side lighting, and no text or watermark. Catalogue illustrations remain original code-rendered covers.
-
-## Account navigation and removing orders
-
-General sign-in returns to the home page. Checkout and the orders page retain their explicit sign-in destinations. Signed-in customers can sign out from the shared header on every page.
-
-`DELETE /api/orders/{id}` removes an order from the verified owner's visible history. It requires a same-origin request and no body. Success returns `200 {"deleted":true}`; signed-out requests return 401, missing/foreign origins 403, invalid IDs or absent/other-owner/already-deleted orders 404, and database failures 503. The server never accepts a customer ID from the browser.
-
-Customers confirm **Delete from history** before removal. This stores `deleted_at` in Supabase and hides the order from history, detail pages and email retries. It does not cancel an order, restore stock, erase accounting snapshots, or permit an old checkout request to create another order. Migration `202610050001_order_history_deletion.sql` was applied to the FolioVale Supabase project on 5 October 2026. Apply it when upgrading other databases.
-
-Verification on 5 October 2026 for these account changes: TypeScript passed, all 28 automated tests passed, and the production build passed. Supabase transaction tests passed for ownership, repeated removal, hidden order/item reads through RLS, retained snapshots, unchanged stock and checkout idempotency; all test data was rolled back. Local HTTP checks returned 401 for signed-out deletion and 403 for foreign-origin deletion. This website version has not been committed, pushed or deployed.
-
-OAuth uses the exact registered `/auth/callback` URL. A short-lived, same-site `fv_auth_next` cookie stores only an allowlisted destination (`/`, `/checkout` or `/orders`) and is cleared by the callback. This avoids Supabase rejecting callback URLs with additional query parameters.
-
-## Task 3 Phase 1 API contract (pending migration)
-
-The existing endpoints and JSON representations remain in use; no mobile-specific routes or UI are added. `/api/session` returns `{user: Customer | null}` with the same fields for cookie and bearer sessions. Authenticated `/api/cart` and checkout resolve one account cart by verified Supabase user ID; guests retain the hashed `fv_bag` cookie. Browser sign-in merges guest items on the next cart read, write or checkout.
-
-All API routes validate a supplied `Authorization: Bearer <Supabase access token>` against Supabase Auth. Malformed, invalid or expired credentials return 401 even when valid cookies are present. Mutation requests with a validated bearer token do not need Origin. Cookie/guest mutations still require the existing matching Origin/Host/protocol guard. JSON validation, checkout idempotency, order ownership, soft deletion and email retry rules remain unchanged. Clients never supply a user ID, cart token or price.
-
-Migration and release notes are recorded in the Task 3 Phase 1 handoff below. Do not deploy this backend before its new migration is applied.
-
-### Task 3 Phase 1 handoff
-
-See [TASK3_PHASE1.md](TASK3_PHASE1.md) for the complete change list, database details, migration instructions and deployment risks. This phase adds backend support only. The existing `mobile/` folder was left untouched. No commit, push, deployment, new provider resource or Task 3 live migration was performed.
-
-Disposable database verification (never connects to Supabase):
+Optional isolated SQL verification uses `tests/database-runner.mjs` and PGlite under ignored `output/db-check`. It never loads production environment files or contacts Supabase:
 
 ```sh
 npm install --prefix output/db-check --cache output/npm-cache --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @electric-sql/pglite
 node tests/database-runner.mjs
 ```
 
-PGlite is used only under ignored verification output; it is not an application dependency. These checks validate PostgreSQL schema, functions, policies and transaction behavior. They do not replace a live Supabase Realtime subscription or multi-connection concurrency test.
+Automated checks do not replace final preview-APK, real-device or email-inbox verification.
 
-Final Phase 1 verification on 5 October 2026: 39 automated tests, TypeScript and the production build passed. Both disposable database scripts passed. Local production-server checks returned 401 for invalid bearer credentials, 200 for anonymous cart reads and 403 for guest writes without Origin. The shared-cart migration remains unapplied, so authenticated cart use with this new local backend requires that migration first.
+## Supabase Migrations
+
+Read-only remote inspection confirms the following local and remote migration versions are aligned:
+
+| Filename | Purpose |
+| --- | --- |
+| `20261001113845_foliovale_shop_schema.sql` | Original shop schema |
+| `20261001122703_foliovale_catalog.sql` | Initial catalogue |
+| `20261001163535_expand_foliovale_catalog_53_products.sql` | Expanded catalogue |
+| `20261005100819_order_history_deletion.sql` | Hide orders from customer history |
+| `20261005110000_shared_account_carts.sql` | Shared account carts and notification metadata |
+| `20261006000100_catalog_description_corrections.sql` | 21 corrected descriptions |
+
+All six are recorded remotely; the catalogue corrections are live. No history repair or replay of these migrations is needed. This cleanup performs no database writes. Future changes require new reviewed migrations; preserve historical SQL.
+
+## EAS Builds
+
+`mobile/eas.json` has two internal Android APK profiles:
+
+| Profile | Environment | Behavior |
+| --- | --- | --- |
+| development | development | Development client; connects to Metro |
+| preview | preview | No `developmentClient`; intended for standalone use without Metro |
+
+The current preview build was reported running when cleanup began. No build was started, stopped or changed during this work. After completion, install the resulting APK and verify launch/icon/splash, absence of development UI, authentication, cart sync and checkout. Do not infer preview QA from development-build results. See [mobile build guidance](mobile/README.md#build-profiles).
+
+## HNG Lesson 3 Compliance
+
+The latest official submission form supplied by the project owner supersedes earlier guide wording for submission requirements.
+
+**Task One requires:** a reviewer-accessible APK download link (Google Drive or another accessible file-sharing service), the GitHub/Git repository containing the mobile source, and **one single, continuous video** demonstrating the mobile app working with the existing website, including the required Web ↔ Mobile login and cart synchronization behavior.
+
+| Requirement | Status | Evidence / remaining action |
+| --- | --- | --- |
+| Mobile counterpart | Complete | Expo routes and existing shopping flows |
+| Same backend/API | Complete | Mobile client uses existing website routes |
+| Same authentication/account | Complete | Shared Supabase project and Google provider |
+| Web → mobile cart synchronization | Complete | Owner-reported development-build add, quantity and removal checks passed |
+| Physical-phone testing | Complete using development build | Owner-reported Google sign-in and cart checks |
+| Launchable FolioVale icon | Complete in development build | Native configuration and canonical FolioVale assets |
+| Clean preview APK build | In progress / pending completion | Current build completion not confirmed |
+| Final preview APK physical QA | Pending | Install and test the final artifact |
+| APK download link | Pending until final APK is uploaded | Upload and confirm reviewer download access |
+| Repository link | Available after final branch is pushed | Provide the repository/branch containing final mobile source and reviewer access |
+| Single continuous demonstration video | Pending | Show mobile + website, login and cart synchronization in one uninterrupted recording |
+
+**Task Two requires:** the PR link in the team's project and a screenshot/picture showing the submission.
+
+| Requirement | Status |
+| --- | --- |
+| Team PR | Pending; no completion evidence recorded |
+| PR link | Pending |
+| Submission screenshot/picture | Pending |
+
+The [detailed compliance checklist](docs/implementation/HNG15_LESSON3_COMPLIANCE.md) records evidence and remaining actions. Google Play / App Store publication is not required; the **APK download/submission link is required**. Mailgun is not required for Lesson 3. Advanced Realtime is optional and implemented. Task Two is not complete without the required evidence.
+
+## Deployment
+
+The website is hosted on Vercel. Future deployments need the server environment variables, matching Supabase project and appropriate website OAuth callbacks. Android artifacts use the existing EAS project and selected profile/environment. Deployment, cloud-variable changes and builds are separate authorized actions; none is performed by this cleanup.
+
+## Project Structure
+
+```text
+app/                   Website pages and existing API routes
+components/            Website UI and shared shop state
+lib/                   Auth, commerce, catalogue, email and repository code
+public/                Website artwork and canonical favicon
+mobile/                Expo app, native configuration and focused tests
+supabase/migrations/   Six aligned SQL migrations
+tests/                 Website and isolated database tests
+docs/implementation/   Current compliance and cleanup reports
+docs/history/          Clearly labelled development checkpoint records
+```
+
+[PRD.md](PRD.md) defines product scope. [AGENTS.md](AGENTS.md) and [mobile/AGENTS.md](mobile/AGENTS.md) define contributor constraints. Historical reports are retained for provenance and are not current setup instructions.
